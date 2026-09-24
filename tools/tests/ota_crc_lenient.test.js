@@ -4,7 +4,8 @@ const ROOT = path.join(__dirname, '..', '..');
 // 回归：设备应答的 CRC 字节不符（2026-09-25 真机踩到：重连后第二次 0x85 的 02 应答被丢弃 ⇒ OTA 报 "DFU 超时"）
 // 断言：① dfuRequest 在"结构完整 + CRC 不符"时宽容采用并返回载荷；② 整个 OTA 流程不再因此中止。
 const fs = require('fs'), vm = require('vm');
-const FW = fs.readFileSync(path.join(ROOT, 'rom/W96D_V13.up'));
+const { makeFw } = require(path.join(__dirname, 'fixtures', 'synthetic_fw.js'));
+const FW = makeFw();   // 合成固件 81860B（仓库不再附带官方固件）
 const html = fs.readFileSync(path.join(ROOT, 'W96D统一控制台.html'), 'utf8');
 const script = [...html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/g)].map(m => m[1]).join('\n');
 const ELS = {}, LOGS = [];

@@ -7,3 +7,8 @@ node_modules/
 # 蓝牙 HCI 抓包体积大（几百 KB~几 MB），关键帧已提取进文档附录 A / tools/tests/fixtures/
 BT_HCI_*.cfa
 *.btsnoop
+
+# 厂商固件不随仓库分发（官方 .up/.df 请自行从 WITRN 官网下载）
+rom/
+*.up
+*.df

@@ -7,7 +7,8 @@ const ROOT = path.join(__dirname, '..', '..');
 //       ④ 顺序 = 0x85→0x8C→0x81→0x87→数据→0x88→0x0B；⑤ 干跑不发 0x81/0x87/0x0B。
 const fs = require('fs'), vm = require('vm');
 const HTML = path.join(ROOT, 'W96D统一控制台.html');
-const FW = fs.readFileSync(path.join(ROOT, 'rom/W96D_V13.up'));   // 真实固件 81860B
+const { makeFw } = require(path.join(__dirname, 'fixtures', 'synthetic_fw.js'));
+const FW = makeFw();   // 合成固件 81860B（仓库不再附带官方固件）
 const html = fs.readFileSync(HTML, 'utf8');
 const script = [...html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/g)].map(m => m[1]).join('\n');
 const ELS = {}, LOGS = [];

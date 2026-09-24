@@ -4,7 +4,7 @@
  *   node tools/tests/run_all.js
  *
  * 每个测试都是独立的 node 脚本，退出码 0 = 通过。改动 W96D统一控制台.html /
- * tools/*.js / rom/ 之后跑一遍最省心。 */
+ * tools/*.js / fixtures 之后跑一遍最省心。 */
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
