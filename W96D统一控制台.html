@@ -1126,7 +1126,7 @@ async function usbReadLoop() {
 }
 function usbHandleLine(line) {
   // 遥测行去重：解析字段后与上一条完全一致（SN/Gear/Speed/VBus/VBat/IBat 全同）则不进日志，只更新仪表
-  // 实测格式（0x0716 批次）: ,SN=000123,Gear=0,Speed=0,VBus=5.0,VBat=4.2,IBat=0.00
+  // 实测格式（0x0716 批次）: ,SN=XXXXXX,Gear=0,Speed=0,VBus=5.0,VBat=4.2,IBat=0.00
   // 兼容 JSON（其他批次/官方文档中的 vbus/vbat/ibat 小写字段）
   let j;
   try { j = JSON.parse(line); }

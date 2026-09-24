@@ -6,6 +6,19 @@ const os = require('os');
 const path = require('path');
 const { execFileSync } = require('child_process');
 const fx = require(path.join(__dirname, 'fixtures', 'key_frames.js'));
+const T = require(path.join(__dirname, '..', 'crc8_table.js'));
+
+// 按设备侧规则造一条通知帧：55|key|len16LE|payload|CRC8，字节(≥2)与 CRC8_TABLE[key] 异或。
+// 夹具里含真实设备 SN 的通知帧已按隐私要求移除，这里用占位 SN 自建一条来覆盖该结构。
+function mkNotify(key, payload) {
+  const f = Buffer.alloc(5 + payload.length);
+  f[0] = 0x55; f[1] = key; f.writeUInt16LE(payload.length, 2); Buffer.from(payload).copy(f, 4);
+  let c = 0x89; for (let i = 0; i < 4 + payload.length; i++) c = T[(c ^ f[i]) & 0xff];
+  const m = T[key]; for (let i = 2; i < f.length; i++) f[i] ^= m;
+  f[f.length - 1] = c ^ m;
+  return f;
+}
+const SN_FRAME = mkNotify(0x1f, [0x0a, 0x7b, 0x00, 0x00, 0x00]);   // 占位 SN = 0x00000123
 
 /* ---------- 合成 btsnoop ---------- */
 const H4_ACL = 0x02, H4_EVT = 0x04;
@@ -20,7 +33,7 @@ const attWrite = (handle, value) => [0x52, handle & 0xff, handle >> 8, ...value]
 const attNotify = (handle, value) => [0x1b, handle & 0xff, handle >> 8, ...value];
 const attMtu = (mtu, rsp) => [rsp ? 0x03 : 0x02, mtu & 0xff, mtu >> 8];   // MTU 请求/应答没有 handle 字段
 const evConn = (handle) => {
-  const addr = [0x60, 0x9d, 0x65, 0x5e, 0x0c, 0xd0];           // 线上字节（LE），解析器会反转成 aa:bb:cc:dd:ee:ff
+  const addr = [0xff, 0xee, 0xdd, 0xcc, 0xbb, 0xaa];           // 占位地址（线上 LE 字节），解析器会反转成 aa:bb:cc:dd:ee:ff
   return { data: Buffer.from([H4_EVT, 0x3e, 0x1f, 0x0a, 0x00, handle & 0xff, handle >> 8, 0x00, 0x00,
     ...addr, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x06, 0, 0, 0, 0xf4, 0x01]), sent: false };
 };
@@ -36,6 +49,7 @@ add(29017, evConnParam(H, 6, 500));            // 7.5ms / 5000ms
 add(29819, acl(H, attMtu(247, false), true));
 add(29835, acl(H, attMtu(243, true), false));
 add(30486, acl(H, attWrite(HX, [0x01, 0x00]), true));
+add(30866, acl(H, attNotify(0x0012, SN_FRAME), false));   // SN 应答（占位值）
 // 命令帧与设备应答按夹具时间轴插入
 for (const c of fx.ctrl) add(c.t, acl(H, attWrite(HW, Buffer.from(c.raw, 'hex')), true));
 for (const n of fx.notify) add(n.t, acl(H, attNotify(0x0012, Buffer.from(n.raw, 'hex')), false));
@@ -75,7 +89,7 @@ const want = [
   [/MTU 请求 247/, '解析 MTU 请求'],
   [/MTU 应答 243/, '解析 MTU 应答'],
   [/订阅 FEE2 通知（CCCD 0x0013 ← 01 00）/, '识别 CCCD 订阅'],
-  [/GET_SN\(序列号\) \(\+\d+ms\)\s+← 序列号 0x000123/, '0x8F/0x0F → SN'],
+  [/GET_SN\(序列号\) \(\+\d+ms\)\s+← 序列号 0x7b/, '0x0F → SN（占位值）'],
   [/GET_VERSION\(版本\) \(\+\d+ms\)\s+← 版本 04 0d/, '0x8A → 版本'],
   [/CHECK_IN_DFU\(查DFU态\) \(\+\d+ms\)\s+← 状态 01 = 应用态/, '切换前 0x85 → 01'],
   [/ENTER_DFU\(进DFU\) \(\+\d+ms\)\s+← 状态 02 = DFU态\/OK/, '0x84 → 02'],
