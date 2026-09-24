@@ -1,0 +1,1738 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>W96D 统一控制台 · v20260925f</title>
+<style>
+:root{--bg:#f0f2f5;--card:#fff;--text:#1a1a2e;--muted:#666;--on:#00b894;--off:#ff6b6b;--pri:#0984e3;--warn:#fdcb6e;--border:#e3e6ea}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);padding:12px;max-width:860px;margin:0 auto;font-size:15px}
+h1{font-size:1.3rem;margin:4px 0 10px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.card h3{font-size:1rem;margin-bottom:10px;color:#2d3436}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.btn{border:none;border-radius:8px;padding:9px 14px;font-size:.95rem;cursor:pointer;background:#dfe6e9;color:var(--text);transition:.15s}
+.btn:hover{filter:brightness(.95)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn-on{background:var(--on);color:#fff}
+.btn-off{background:var(--off);color:#fff}
+.btn-pri{background:var(--pri);color:#fff}
+.btn-warn{background:var(--warn)}
+.btn-tiny{padding:6px 10px;font-size:.85rem}
+label{color:var(--muted);font-size:.9rem}
+input[type=number],input[type=text]{border:1px solid var(--border);border-radius:8px;padding:8px;width:110px;font-size:.95rem}
+input[type=range]{width:100%;accent-color:var(--pri)}
+.val{font-weight:700;font-size:1.25rem;color:var(--pri)}
+.kv{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--border)}
+.kv:last-child{border-bottom:none}
+.kv .k{color:var(--muted)}
+.badge{display:inline-block;padding:2px 10px;border-radius:99px;font-size:.82rem;background:#dfe6e9}
+.badge.on{background:var(--on);color:#fff}
+.badge.off{background:var(--off);color:#fff}
+#connBar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+#connDot{width:12px;height:12px;border-radius:50%;background:#b2bec3;display:inline-block}
+#connDot.ble{background:#00b894}#connDot.usb{background:#0984e3}#connDot.hid{background:#0984e3}
+.tabs{display:flex;gap:4px;margin-bottom:12px;flex-wrap:wrap}
+.tabs button{flex:1;padding:10px 6px;border:none;border-radius:10px 10px 0 0;background:#dfe6e9;cursor:pointer;font-size:.92rem;white-space:nowrap}
+.tabs button.active{background:var(--card);font-weight:700;color:var(--pri);box-shadow:0 -2px 4px rgba(0,0,0,.05)}
+.tabpage{display:none}.tabpage.active{display:block}
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#2d3436;color:#fff;padding:10px 18px;border-radius:10px;opacity:0;pointer-events:none;transition:.3s;max-width:90vw;z-index:99}
+#toast.show{opacity:1}
+canvas{background:#fafbfc;border:1px solid var(--border);border-radius:8px;width:100%;touch-action:none}
+textarea{width:100%;min-height:70px;border:1px solid var(--border);border-radius:8px;padding:8px;font-size:.9rem;font-family:inherit}
+#usbLog{background:#2d3436;color:#dfe6e9;font-family:ui-monospace,Consolas,monospace;font-size:.78rem;padding:10px;border-radius:8px;max-height:180px;overflow:auto;white-space:pre-wrap;word-break:break-all}
+.note{font-size:.83rem;color:var(--muted);margin-top:6px;line-height:1.5}
+.warnbox{background:#fff3cd;border:1px solid #ffe08a;border-radius:8px;padding:8px 12px;font-size:.85rem;margin-top:8px}
+.info{font-size:.9rem;color:var(--muted)}
+.disp{min-height:1.4em}
+.switchrow{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px dashed var(--border)}
+.switchrow:last-child{border-bottom:none}
+</style>
+</head>
+<body>
+<h1>🌬️ W96D 统一控制台</h1>
+<div class="card">
+  <div id="connBar">
+    <span id="connDot"></span><span id="connText">未连接</span>
+    <span style="flex:1"></span>
+    <button class="btn btn-pri" id="btnConnectBle">📶 连接蓝牙 (NEW W96D / Pro)</button>
+    <button class="btn" id="btnConnectUsb" style="display:none">🔌 连接USB (老版)</button>
+    <button class="btn" id="btnConnectHid" style="display:none">🔗 连接HID (老版)</button>
+    <button class="btn" id="btnDisconnect" disabled>断开</button>
+  </div>
+  <div class="note" id="connHint">NEW W96D / W96Pro 走蓝牙（Web Bluetooth）。老版 W96D 为 HID 类设备：<b>电脑版 Chrome/Edge 点「连接HID」</b>。安卓手机需等 Chrome 157 官方支持 WebHID（当前仅 Canary/Dev 有实验 flag）。已知硬件 ID：<code>0x0716:0x5103</code>（DeepFan，实测）与 <code>0x0E2C:0xA206</code>。</div>
+</div>
+
+<div class="tabs">
+  <button data-tab="tabCtrl" class="active">控制</button>
+  <button data-tab="tabCurve" id="tabBtnCurve">自然风曲线</button>
+  <button data-tab="tabPd" id="tabBtnPd" style="display:none">⚡ PRO 实验</button>
+  <button data-tab="tabInfo" id="tabBtnInfo">设备信息</button>
+  <button data-tab="tabHelp">帮助</button>
+</div>
+
+<!-- ============ 控制 ============ -->
+<div id="tabCtrl" class="tabpage active">
+  <div id="bleCtrl" style="display:none">
+    <div class="card">
+      <h3>⏻ 电源与档位</h3>
+      <div class="row" style="margin-bottom:8px">
+        <button class="btn btn-on" id="blePowerOn">开机</button>
+        <button class="btn btn-off" id="blePowerOff">关机</button>
+      </div>
+      <div class="grid4" style="margin-bottom:10px">
+        <button class="btn gearBtn" data-gear="1">1档</button>
+        <button class="btn gearBtn" data-gear="2">2档</button>
+        <button class="btn gearBtn" data-gear="3">3档</button>
+        <button class="btn gearBtn" data-gear="4">4档</button>
+      </div>
+      <label>转速 <span id="bleSpeedVal" class="val">--%</span></label>
+      <input type="range" id="bleSpeed" min="0" max="100" value="50">
+      <div class="note" style="margin-top:4px;opacity:.75">滑轨为直接风速控制（0-100%），风扇落在哪一档由设备内各档标定风速决定；上方档位按钮按标定值下发，档位准确。</div>
+      <div class="note" style="margin-top:10px">档位风速标定：
+        <input type="number" id="calib1" min="0" max="100" style="width:64px" title="第1档"> 
+        <input type="number" id="calib2" min="0" max="100" style="width:64px" title="第2档"> 
+        <input type="number" id="calib3" min="0" max="100" style="width:64px" title="第3档"> 
+        <input type="number" id="calib4" min="0" max="100" style="width:64px" title="第4档">
+        <button class="btn btn-tiny" id="bleCalibApply">保存</button>
+        <span style="opacity:.6">｜</span>
+        <label>转速</label>
+        <input type="number" id="bleSpeedInput" min="0" max="100" value="50" style="width:70px">
+        <button class="btn btn-tiny" id="bleSpeedApply">应用</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3>🌀 模式</h3>
+      <div class="row">
+        <button class="btn" id="bleTurbo">Turbo</button>
+        <button class="btn" id="bleNW">自然风</button>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <label>Turbo 时长(秒)</label>
+        <input type="number" id="bleTurboTime" min="0" max="600" value="199" style="width:90px">
+        <button class="btn btn-tiny" id="bleTurboTimeApply">应用</button>
+        <span class="badge" id="bleTurboRemain">Turbo 剩余:--</span>
+      </div>
+      <div class="switchrow" style="margin-top:8px"><span>机身「−」按键模式<br><span class="note" style="margin:0">逐级：每按一下降一档；直接回0：按住直接停</span></span>
+        <span class="row"><span class="badge" id="bleGearDownBadge">--</span><button class="btn btn-tiny" id="bleGearDownMode">切换</button></span></div>
+    </div>
+    <div class="card">
+      <h3>💡 灯光</h3>
+      <div class="row" id="lightBtns"></div>
+      <div class="info disp" id="lightCur" data-cur="">当前亮度:--</div>
+    </div>
+    <div class="card">
+      <h3>⏱️ 定时与休眠</h3>
+      <div class="grid2">
+        <div>
+          <label>定时(分钟)</label>
+          <div class="row">
+            <input type="number" id="bleTimerMin" value="60" style="width:90px">
+            <button class="btn btn-tiny" id="bleTimerSet">设置</button>
+            <button class="btn btn-tiny" id="bleTimerCancel">取消</button>
+          </div>
+          <div class="info disp" id="bleTimerRemain">剩余:--</div>
+        </div>
+        <div>
+          <label>自动休眠(秒，0=永不)</label>
+          <div class="row">
+            <input type="number" id="bleSleep" value="300" style="width:90px">
+            <button class="btn btn-tiny" id="bleSleepApply">应用</button>
+            <button class="btn btn-tiny" id="bleSleepNever">永不</button>
+          </div>
+          <div class="info disp" id="bleSleepCur">当前:--</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>📊 实时状态</h3>
+      <div class="grid2">
+        <div>
+          <div class="kv"><span class="k">转速</span><span class="disp" id="rtSpeed">--</span></div>
+          <div class="kv"><span class="k">电池电压</span><span class="disp" id="rtBv">--</span></div>
+          <div class="kv"><span class="k">电池电流</span><span class="disp" id="rtBi">--</span></div>
+          <div class="kv"><span class="k">电池容量</span><span class="disp" id="rtBc">--</span></div>
+          <div class="kv"><span class="k">电池功率</span><span class="disp" id="rtBp">--</span></div>
+        </div>
+        <div>
+          <div class="kv"><span class="k">VBUS 电压</span><span class="disp" id="rtVv">--</span></div>
+          <div class="kv"><span class="k">VBUS 电流</span><span class="disp" id="rtVi">--</span></div>
+          <div class="kv"><span class="k">充放状态</span><span class="disp" id="rtChg">--</span></div>
+          <div class="kv"><span class="k">电机电流/电压</span><span class="disp" id="rtMot">--</span></div>
+          <div class="kv"><span class="k">电机功率</span><span class="disp" id="rtMp">--</span></div>
+        </div>
+      </div>
+      <div class="grid2" style="margin-top:6px">
+        <div>
+          <div class="kv"><span class="k">固件版本</span><span class="disp" id="infoVer">--</span></div>
+        </div>
+        <div>
+          <div class="kv"><span class="k">序列号 SN</span><span class="disp" id="infoSn">--</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="usbCtrl" style="display:none">
+    <div class="card">
+      <h3>⏻ 档位控制（老版 W96D）</h3>
+      <div class="row" style="margin-bottom:8px">
+        <button class="btn uGearBtn" data-gear="0">⏹ 停止</button>
+      </div>
+      <div class="grid4" style="margin-bottom:10px">
+        <button class="btn uGearBtn" data-gear="1">1档</button>
+        <button class="btn uGearBtn" data-gear="2">2档</button>
+        <button class="btn uGearBtn" data-gear="3">3档</button>
+        <button class="btn uGearBtn" data-gear="4">4档</button>
+      </div>
+      <label>当前档位风速 <span id="uGearPwmVal" class="val">未运行</span></label>
+      <input type="range" id="uSpeed" min="1" max="100" value="50" disabled>
+      <div class="note" style="margin-top:8px">拖动滑轨实时写入当前运行档位的风速（GSETn，约0.2秒防抖后下发）；档位变化时自动同步位置。停止状态滑轨不可用。</div>
+      <label style="margin-top:10px">各档风速设置（1-100）</label>
+      <div class="row">
+        <input type="number" id="gset1" min="0" max="255" style="width:80px" value="40" title="第1档风速">
+        <input type="number" id="gset2" min="0" max="255" style="width:80px" value="55" title="第2档风速">
+        <input type="number" id="gset3" min="0" max="255" style="width:80px" value="70" title="第3档风速">
+        <input type="number" id="gset4" min="0" max="255" style="width:80px" value="85" title="第4档风速">
+        <button class="btn btn-tiny" id="usbGsetApply">保存风速</button>
+      </div>
+      <div class="note">切档即生效；每档风速可在上方调好保存，切到该档时会自动读回当前值。</div>
+    </div>
+    <div class="card">
+      <h3>📊 实时状态</h3>
+      <div class="kv"><span class="k">序列号</span><span class="disp" id="uSn">--</span></div>
+      <div class="grid2" style="margin-top:6px">
+        <div>
+          <div class="kv"><span class="k">输入电压</span><span class="disp" id="uVbus">--</span></div>
+          <div class="kv"><span class="k">电池电压</span><span class="disp" id="uVbat">--</span></div>
+        </div>
+        <div>
+          <div class="kv"><span class="k">电池电流</span><span class="disp" id="uIbat">--</span></div>
+          <div class="kv"><span class="k">当前档位 / 转速</span><span class="disp" id="uPwmGear">--</span></div>
+        </div>
+      </div>
+      <div class="kv" style="margin-top:6px"><span class="k">电池功率（峰值法，5s 更新）</span><span class="disp" id="uPower">--</span></div>
+      <div class="note" style="margin-top:4px">每 5 秒取该窗口内 V/I 乘积的样本最大值，抑制瞬时抖动。</div>
+    </div>
+  </div>
+
+  <div id="noConn" class="card"><div class="info" style="text-align:center;padding:24px 0">请先点击上方按钮连接设备<br>
+  <span class="note">蓝牙支持 NEW W96D / W96Pro（设备名以 W96D 开头）；USB 支持老版 W96D（需授权 USB 设备弹窗）</span></div></div>
+</div>
+
+<!-- ============ 自然风曲线 ============ -->
+<div id="tabCurve" class="tabpage">
+  <div id="bleCurveCard" class="card">
+    <h3>🌬️ 自然风曲线（蓝牙版）— 画布 128 点，整条直存设备</h3>
+    <div class="note">适用 NEW W96D / W96Pro（BLE）。曲线 = 128 个风量点，画完一次性写入设备；无分组概念。</div>
+    <div class="row" style="margin-bottom:8px">
+      <label><input type="checkbox" id="cvSmooth" checked> 平滑</label>
+      <label>风量区间</label>
+      <input type="number" id="cvMin" min="0" max="100" value="0" style="width:70px">
+      <span style="opacity:.6">~</span>
+      <input type="number" id="cvMax" min="0" max="100" value="100" style="width:70px">
+      <button class="btn btn-tiny" id="cvRandom">🎲 按区间随机生成</button>
+    </div>
+    <canvas id="cvCanvas" width="800" height="200"></canvas>
+    <div style="margin-top:8px"><textarea id="cvData" spellcheck="false"></textarea></div>
+    <div class="row" style="margin-top:8px">
+      <button class="btn btn-pri" id="cvApply">🌊 应用到设备</button>
+      <button class="btn" id="cvRead">📖 读取当前</button>
+      <button class="btn" id="cvDefault">🔄 还原默认</button>
+    </div>
+    <div class="note">提示：即使自然风关闭也可修改并保存，开启后生效。画布按住拖动直接画曲线。</div>
+  </div>
+  <div id="usbCurveCard" class="card" style="display:none">
+    <h3>🌀 自然风曲线（老版 USB）— 10 点/组 × 最多 20 组</h3>
+    <div class="note">适用老版 W96D（USB/HID）。画布 100 点 = 10 组（默认）；每点 = 一个风量值 0-100。</div>
+    <div class="row" style="margin-bottom:8px">
+      <label><input type="checkbox" id="uvSmooth" checked> 平滑</label>
+      <label>风量区间</label>
+      <input type="number" id="uvMin" min="0" max="100" value="0" style="width:70px">
+      <span style="opacity:.6">~</span>
+      <input type="number" id="uvMax" min="0" max="100" value="100" style="width:70px">
+      <button class="btn btn-tiny" id="uvRandom">🎲 按区间随机生成</button>
+      <span class="badge">100 点 = 10 组（上限 20 组 / 200 点）</span>
+    </div>
+    <canvas id="uvCanvas" width="800" height="200"></canvas>
+    <div style="margin-top:8px"><textarea id="uvVals" spellcheck="false"></textarea></div>
+    <div class="row" style="margin-top:8px">
+      <label>整条曲线时长 Time Cycle（1-3600 秒）</label><input type="number" id="uwTim" min="1" max="3600" value="600" style="width:120px">
+      <span class="info">每点 = 时长÷点数（100 点时默认 6s/点）</span>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <button class="btn btn-pri" id="uvApply">🌊 上传曲线</button>
+      <button class="btn btn-warn" id="uvClr">恢复默认</button>
+    </div>
+    <div class="note">拖动画布画曲线；Time Cycle 是整条曲线循环一圈的时间。上传后风扇按曲线自动变速。</div>
+  </div>
+</div>
+
+<!-- ============ 快充 (Pro) ============ -->
+<div id="tabPd" class="tabpage">
+  <div class="card">
+    <h3>📊 快充实时状态</h3>
+    <div class="grid2">
+      <div>
+        <div class="kv"><span class="k">VBUS 电压</span><span class="disp" id="pdVv">--</span></div>
+        <div class="kv"><span class="k">VBUS 电流</span><span class="disp" id="pdVi">--</span></div>
+        <div class="kv"><span class="k">电池电压</span><span class="disp" id="pdBv">--</span></div>
+        <div class="kv"><span class="k">电池电流</span><span class="disp" id="pdBi">--</span></div>
+        <div class="kv"><span class="k">电池功率</span><span class="disp" id="pdBp">--</span></div>
+      </div>
+      <div>
+        <div class="kv"><span class="k">电路通断</span><span class="disp" id="pdPowc">--</span></div>
+        <div class="kv"><span class="k">充放电状态</span><span class="disp" id="pdChg">--</span></div>
+        <div class="kv"><span class="k">输入快充协议</span><span class="disp" id="pdSink">--</span></div>
+        <div class="kv"><span class="k">输出快充协议</span><span class="disp" id="pdSrc">--</span></div>
+        <div class="kv"><span class="k">快充协议版本</span><span class="disp" id="pdVer">--</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>🔌 输入控制</h3>
+    <div class="switchrow"><span>C口输入快充<br><span class="note" style="margin:0">开启或关闭 C 口输入快充功能</span></span>
+      <span class="row"><span class="badge" id="pdCinBadge">--</span><button class="btn btn-tiny" id="pdCinOn">打开</button><button class="btn btn-tiny" id="pdCinOff">关闭</button></span></div>
+    <div class="switchrow"><span>输入支持 12V<br><span class="note" style="margin:0">是否支持 12V 输入电压</span></span>
+      <span class="row"><span class="badge" id="pd12vBadge">--</span><button class="btn btn-tiny" id="pd12vOn">打开</button><button class="btn btn-tiny" id="pd12vOff">关闭</button></span></div>
+  </div>
+  <div class="card">
+    <h3>📋 协议配置（输入快充协议开关）</h3>
+    <div class="switchrow"><span>PD<br><span class="note" style="margin:0">USB PD 通用快充协议（开启或关闭 PD 输入）</span></span>
+      <span class="row"><span class="badge" id="pdSinkBadge">--</span><button class="btn btn-tiny" id="pdSinkOn">打开</button><button class="btn btn-tiny" id="pdSinkOff">关闭</button></span></div>
+    <div class="switchrow"><span>FCP<br><span class="note" style="margin:0">华为 FCP 输入协议</span></span>
+      <span class="row"><span class="badge" id="pdFcpBadge">--</span><button class="btn btn-tiny" id="pdFcpOn">打开</button><button class="btn btn-tiny" id="pdFcpOff">关闭</button></span></div>
+    <div class="switchrow"><span>AFC<br><span class="note" style="margin:0">三星 AFC 输入协议</span></span>
+      <span class="row"><span class="badge" id="pdAfcBadge">--</span><button class="btn btn-tiny" id="pdAfcOn">打开</button><button class="btn btn-tiny" id="pdAfcOff">关闭</button></span></div>
+    <div class="switchrow"><span>SCP<br><span class="note" style="margin:0">华为 SCP 输入协议</span></span>
+      <span class="row"><span class="badge" id="pdScpBadge">--</span><button class="btn btn-tiny" id="pdScpOn">打开</button><button class="btn btn-tiny" id="pdScpOff">关闭</button></span></div>
+    <div class="row" style="margin-top:10px">
+      <button class="btn" id="pdRefresh">🔄 刷新</button>
+      <button class="btn btn-warn" id="pdReset">恢复默认</button>
+    </div>
+    <div class="warnbox">⚠️ 高风险：可能烧毁设备，后果自负。部分固件下开关可能无效。</div>
+  </div>
+</div>
+
+<!-- ============ 设备信息 ============ -->
+<div id="tabInfo" class="tabpage">
+  <div class="note" id="infoBleOnly" style="display:none;margin-bottom:10px">本页两个功能（蓝牙名称显示 SN、电池容量设置）仅蓝牙连接的 NEW W96D / W96P 支持，老版 W96D 固件无对应命令。</div>
+
+  <div class="card">
+    <h3>🔬 DFU / OTA 诊断（安全：不发 0x87 擦除命令）</h3>
+    <div class="note" style="margin-bottom:8px">
+      <b>2026-09-25 已用官方小程序成功刷机的 HCI 抓包定论</b>：切换的关键是「<code>0x84 ENTER_DFU</code> 应答后<b>立刻在同一条连接上</b>补发 <code>0x8F</code>」——
+      此后设备停 BLE、链路约 5s 监督超时断开，重连（MTU 由 243 变 247）并<b>重新订阅 FEE2</b> 后，
+      <code>0x85→02</code>、<code>0x8C→05 00 10</code>、<code>0x81+头96B</code>（102B 整帧）会回 <code>02</code>。
+      下面的 <b>🔓 照抄小程序</b> 按钮已按此校准，跑到"解锁被确认"为止。<br>
+      另两个按钮（读回通路 / 帧长边界）是定论前的排查手段，结论均已确定（读回不可用；帧长不是原因），一般无需再跑。
+    </div>
+    <div class="row">
+      <input type="file" id="dfuProbeFile" accept=".up,application/octet-stream" style="font-size:.85rem">
+    </div>
+    <div class="note" style="margin-top:6px">选 `W96D_V13.up` 用于取头部 96 字节（解锁帧）；🔓 按钮必须选文件。</div>
+    <div class="row" style="margin-top:8px">
+      <button class="btn btn-pri" id="dfuMimicTest">🔓 照抄小程序：0x84→立刻0x8F→重连→解锁（不擦除）</button>
+      <button class="btn" id="dfuReadProbe">🔬 运行读回测试</button>
+      <button class="btn" id="dfuLimitProbe">📏 帧长边界测试（7→145B）</button>
+    </div>
+    <div id="dfuReadProbeOut" class="note" style="margin-top:8px"></div>
+  </div>
+
+  <div class="card" id="otaCard">
+    <h3>⬆ 固件升级 OTA（NEW W96D / W96Pro）</h3>
+    <div class="note" style="margin-bottom:8px">
+      按<b>官方小程序成功刷机的抓包时序</b>实现：<code>0x84</code> 应答后<b>立刻在同一条连接上</b>发 <code>0x8F</code> 切换 → 等断链 → 重连并重新订阅 FEE2 →
+      <code>0x85→02</code> 确认 → <code>0x8C</code> 页大小 → <code>0x81+头96B</code> → <code>0x87</code>（<b>此步擦除应用区</b>）→ 639 帧写块（无逐块回执，约 18ms/帧）→ <code>0x88</code> → <code>0x0B</code> 复位。
+      <br><b style="color:var(--off)">风险提示</b>：<code>0x87</code> 之后应用区已被擦除，<b>中途不要断电、不要关页面</b>；若失败，设备仍停在 DFU 阶段，重新连接后再刷一次即可。
+      建议先点 <b>🧪 干跑</b> 走到"已进入传输阶段"（不擦除）确认通路。
+    </div>
+    <div class="row">
+      <input type="file" id="otaFile" accept=".up,application/octet-stream" style="font-size:.85rem">
+      <button class="btn btn-pri" id="otaStart">⬆ 开始升级</button>
+      <button class="btn" id="otaDry">🧪 干跑（不擦除）</button>
+    </div>
+    <div class="row" style="margin-top:6px;font-size:.85rem">
+      <label style="display:flex;align-items:center;gap:6px">帧间隔
+        <input type="number" id="otaPace" value="20" min="0" max="200" style="width:64px"> ms
+        <span class="note" style="margin:0">（抓包实测官方小程序≈18ms；若收尾 0x88 无应答，可放慢到 30~40ms 再刷一次）</span>
+      </label>
+    </div>
+    <div style="height:9px;background:var(--border);border-radius:5px;overflow:hidden;margin-top:10px">
+      <div id="otaBarFill" style="height:100%;width:0%;background:var(--pri);transition:width .12s"></div>
+    </div>
+    <div id="otaOut" class="note" style="margin-top:6px">未开始。选择官方 <code>.up</code> 固件后点「开始升级」。</div>
+  </div>
+  <div class="card" id="infoSnCard">
+    <h3>📛 蓝牙名称显示 SN</h3>
+    <div class="note" style="margin:0 0 8px">开启后手机蓝牙列表里的设备名会带上序列号（如 W96D_sn），方便区分多台风扇。</div>
+    <div class="row">
+      <button class="btn btn-tiny" id="bleSnOn">名称中显示 SN</button>
+      <button class="btn btn-tiny" id="bleSnOff">名称中不显示</button>
+      <span class="badge" id="bleSnBadge">状态:--</span>
+    </div>
+  </div>
+  <div class="card" id="infoBatCard">
+    <h3>🔋 电池容量</h3>
+    <div class="row">
+      <label>电池容量</label><input type="number" id="batCap" value="4800" style="width:90px">(mAh)
+      <label>满电电压</label><input type="number" id="batVolt" value="3.6" step="0.1" style="width:80px">(V)
+      <button class="btn btn-tiny" id="batCapSet">保存到风扇</button>
+      <button class="btn btn-tiny" id="batCapRead">📖 读取</button>
+    </div>
+    <div class="info disp" id="batCapCur">当前容量:--</div>
+  </div>
+</div>
+
+<!-- ============ 帮助 ============ -->
+<div id="tabHelp" class="tabpage">
+  <div class="card">
+    <h3>📖 使用说明</h3>
+    <div class="note" style="font-size:.9rem;line-height:1.8">
+      <b>蓝牙（NEW W96D / W96Pro）</b>：点「连接蓝牙」，选 W96D 开头的设备。需要 Chrome / Edge；iOS 不支持。<br>
+      <b>老版 W96D（USB 线）</b>：电脑 Chrome/Edge 点「连接HID」，弹窗选 DeepFan。安卓手机暂不支持（等 Chrome 157）。<br>
+      <b>自然风曲线</b>：在「自然风曲线」页拖动画布画出风量变化，设好一圈时长后上传，风扇自动按曲线变速。可恢复默认。<br>
+      <b>快充实验</b>：仅 W96Pro。蓝牙连接 W96P 后「⚡ PRO 实验」标签自动出现，连接 W96D 自动隐藏。有烧设备风险，慎用。<br>
+      <b>通信日志</b>：页面底部统一日志窗口，所有连接方式的操作/遥测原始数据都记录在此。「显示日志」控制窗口显隐，「遥测日志」控制高频遥测是否记录。
+      <b>安全</b>：电池切勿装反；输入电压勿超规格。<br>
+      <b>固件升级（OTA）</b>：<b>已内置</b>（设备信息页 → ⬆ 固件升级 OTA）。流程按官方小程序成功刷机的 HCI 抓包实现：<code>0x84</code> 应答后立刻在同一条连接上补发 <code>0x8F</code> → 等断链 → 重连并重新订阅 FEE2 → <code>0x85→02</code> → <code>0x8C</code> → <code>0x81+头96B</code> → <code>0x87</code>（此步擦除）→ 639 帧 → <code>0x88</code> → <code>0x0B</code> 复位。<b>先点「🧪 干跑」确认通路（不擦除）</b>；时序与证据见《逆向分析与统一工具方案.md》§2.4.0。<br>
+      <span style="opacity:.75">本工具为逆向研究产物，与官方无关；协议细节与硬件 ID 见项目文档。</span><br>
+      <span style="opacity:.75">版本标记：<b>v20260925f</b>（若与你手上的文件名/说明不一致，请 Ctrl+Shift+R 强刷）</span>
+    </div>
+  </div>
+  <div class="card">
+    <h3>🔍 USB 诊断（认不出设备时用）</h3>
+    <div class="row">
+      <button class="btn btn-tiny" id="diagHidAny">选 HID 设备看信息</button>
+      <button class="btn btn-tiny" id="diagUsbAny">选 USB 设备看信息</button>
+      <button class="btn btn-tiny" id="diagList">列出已授权设备</button>
+    </div>
+    <div class="note">「连接HID」弹窗看不到风扇时，在这里选中设备查看它的真实 ID。</div>
+  </div>
+</div>
+
+<!-- ============ 统一日志（全页共享，任何连接方式都写这里） ============ -->
+<div class="card" id="logCard">
+  <div class="switchrow"><span>📜 通信日志<button class="btn btn-tiny" id="logClear" style="margin-left:10px">清空</button></span>
+    <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="logToggle" checked> 显示日志</label>
+    <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="telLogToggle"> 遥测日志</label></div>
+  <div id="usbLog" style="display:none"></div>
+</div>
+
+<div id="toast"></div>
+
+<script id="protocol-core">
+/* ================= 协议核心（与官方实现逐位对齐，可供 Node 单测） ================= */
+const CRC8_INIT = 137; // 0x89
+// CRC8 表：多项式 0x3B、**非反射（MSB-first）**、初值 0x89
+// ⚠ 2026-09-25 修正：官方网页 W96D_V3.8.html 的表里 120/202 两处被误写成 200（正确值 102/101）。
+//   短帧（6B 控制命令）两条表恰好同值，所以一直没暴露；**长帧（102B 解锁头 / 134B 数据帧）会算错 CRC**
+//   ⇒ 设备静默丢弃，这正是"102B 解锁帧怎么发都没反应"的真正原因。
+//   依据：官方小程序成功刷机的 HCI 抓包（657 条帧）用修正表 **657/657 全中**；未修正只有 251/638。
+const CRC8_TABLE = new Uint8Array([
+// 官方 CRC8 表（摘自 W96D_V3.8.html；120/202 已按 poly=0x3B 真值修正）
+  0,59,118,77,236,215,154,161,227,216,149,174,15,52,121,66,
+  253,198,139,176,17,42,103,92,30,37,104,83,242,201,132,191,
+  193,250,183,140,45,22,91,96,34,25,84,111,206,245,184,131,
+  60,7,74,113,208,235,166,157,223,228,169,146,51,8,69,126,
+  185,130,207,244,85,110,35,24,90,97,44,23,182,141,192,251,
+  68,127,50,9,168,147,222,229,167,156,209,234,75,112,61,6,
+  120,67,14,53,148,175,226,217,155,160,237,214,119,76,1,58,
+  133,190,243,200,105,82,31,36,102,93,16,43,138,177,252,199,
+  73,114,63,4,165,158,211,232,170,145,220,231,70,125,48,11,
+  180,143,194,249,88,99,46,21,87,108,33,26,187,128,205,246,
+  136,179,254,197,100,95,18,41,107,80,29,38,135,188,241,202,
+  117,78,3,56,153,162,239,212,150,173,224,219,122,65,12,55,
+  240,203,134,189,28,39,106,81,19,40,101,94,255,196,137,178,
+  13,54,123,64,225,218,151,172,238,213,152,163,2,57,116,79,
+  49,10,71,124,221,230,171,144,210,233,164,159,62,5,72,115,
+  204,247,186,129,32,27,86,109,47,20,89,98,195,248,181,142
+]);
+function calcCrc8(data, off, len) { let crc = CRC8_INIT; for (let i = 0; i < len; i++) crc = CRC8_TABLE[(crc ^ data[off + i]) & 0xff]; return crc & 0xff; }
+// DFU 0x55 帧（CRC 对"明文帧"计算，与官方安卓APP一致；key=0 时与官方网页逐字节相同）
+// TX key 必须=0！15:37 真机铁证：非0 key 连 7B 小命令都全部静默（8a/8f/85 无一应答），key=0 全部秒回。
+// W96D 与官方网页（key=0）一致，W66D APP 的动态 key（elapsedRealtime&0xff，0→1）不适用于 W96D。
+function dfuPack(payload, key = 0) {
+  const frame = new Uint8Array(5 + payload.length);
+  frame[0] = 0x55; frame[1] = key; frame[2] = payload.length & 0xff; frame[3] = (payload.length >>> 8) & 0xff; frame.set(payload, 4);
+  const crc = calcCrc8(frame, 0, payload.length + 4);
+  const mask = CRC8_TABLE[key]; for (let i = 2; i < frame.length; i++) frame[i] ^= mask;
+  frame[frame.length - 1] = crc; return frame;
+}
+const RxStage = { WAIT_HEAD: 0, READ_KEY: 1, READ_LEN_LOW: 2, READ_LEN_HIGH: 3, READ_PAYLOAD: 4 };
+function makeRx() { return { stage: RxStage.WAIT_HEAD, key: 0, len: 0, idx: 0, crc: CRC8_INIT, buf: new Uint8Array(302) }; }
+function onDfuReceive(rx, data, results, raw) {
+  if (raw) rx.raw = raw; // 整个通知的原始字节，仅用于出错时留痕
+  for (const rawb of data) { const b = rawb & 0xff;
+    switch (rx.stage) {
+      case RxStage.WAIT_HEAD: if (b === 0x55) { rx.stage = RxStage.READ_KEY; rx.crc = CRC8_TABLE[(CRC8_INIT ^ 0x55) & 0xff]; } break;
+      case RxStage.READ_KEY: rx.key = b; rx.crc = CRC8_TABLE[(rx.crc ^ b) & 0xff]; rx.stage = RxStage.READ_LEN_LOW; break;
+      case RxStage.READ_LEN_LOW: { const d = b ^ CRC8_TABLE[rx.key]; rx.len = d; rx.crc = CRC8_TABLE[(rx.crc ^ d) & 0xff]; rx.stage = RxStage.READ_LEN_HIGH; break; }
+      case RxStage.READ_LEN_HIGH: { const d = b ^ CRC8_TABLE[rx.key]; rx.len |= d << 8; rx.crc = CRC8_TABLE[(rx.crc ^ d) & 0xff]; if (rx.len < 1 || rx.len > 300) { if (typeof logTo === 'function') logTo('usbLog', `[RX] 长度字段非法（key=0x${rx.key.toString(16)} len=${rx.len}${rx.raw && typeof bytesHex === 'function' ? '｜原始通知=' + bytesHex(rx.raw) : ''}）→ 丢弃该帧头`); rx.stage = RxStage.WAIT_HEAD; break; } rx.idx = 0; rx.stage = RxStage.READ_PAYLOAD; break; }
+      case RxStage.READ_PAYLOAD: { const d = b ^ CRC8_TABLE[rx.key]; rx.buf[rx.idx] = d; if (rx.idx < rx.len) rx.crc = CRC8_TABLE[(rx.crc ^ d) & 0xff]; rx.idx++;
+        if (rx.idx === rx.len + 1) {
+          const payload = rx.buf.slice(0, rx.len);
+          if (rx.crc === d) results.push(payload);
+          else { // 结构完整（0x55 头 + 合法长度 + 完整载荷）但末尾校验字节不符。
+            // BLE 链路层已有 CRC16 保护，且掩码/长度/载荷都自洽 ⇒ 采用并显著留痕，不再因为一个校验字节把设备已确认的应答丢掉
+            //（2026-09-25 真机踩过：重连后第二次 0x85 的 02 应答被丢弃 ⇒ OTA 直接报 "DFU 超时"）。
+            payload.badCrc = true; results.push(payload); rx.crcFails = (rx.crcFails || 0) + 1;
+            if (typeof logTo === 'function') logTo('usbLog', `[RX] ⚠CRC 不符但结构完整 → 宽容采用：key=0x${rx.key.toString(16)} len=${rx.len} payload=${bytesHex(payload)}｜期望 CRC=0x${rx.crc.toString(16).padStart(2, '0')} 实际=0x${d.toString(16).padStart(2, '0')}${rx.raw ? '｜原始通知=' + bytesHex(rx.raw) : ''}`);
+          }
+          rx.stage = RxStage.WAIT_HEAD;
+        } break; }
+    } }
+}
+function hexStringToBytes(hex) { const b = []; for (let i = 0; i < hex.length; i += 2) b.push(parseInt(hex.substr(i, 2), 16)); return new Uint8Array(b); }
+function speedToHex(s) { return s.toString(16).padStart(2, '0').toUpperCase(); }
+// 大端解析（BLE FFD0 遥测）
+function parseBatteryInfo(dv) { return { voltage: dv.getUint16(0, false), current: dv.getInt16(2, false), capacity: dv.getUint32(4, false) }; }
+function parsePowerStatus(dv) { const v = dv.getUint32(0, false), c = dv.getInt16(4, false); return { vbusVoltage: v, vbusCurrent: c === 0x7FFF ? 0 : c, chargeStatus: dv.getUint8(7) }; }
+function parseMotorInfo(dv) { const cur = dv.getUint16(0, false), block = dv.getUint8(2); const vol = dv.byteLength >= 2 ? dv.getUint16(dv.byteLength - 2, false) : 0; return { rawCurrent: cur, block, voltage: vol }; }
+// 老版 USB ASCII 命令：官方APP行为 = 停转前缀 + 命令（本工具切档直发 GEAR=n，无需前缀；保留函数供测试对拍）
+function buildOldCommand(cmd, val, prefix = true) { const s = `${cmd}=${val},`; return prefix ? 'GEAR=0,' + s : s; }
+// 自然风默认曲线（官方 128 点）
+const DEFAULT_NATURE_WIND_CURVE = "55 48 40 33 28 22 21 26 33 41 48 54 58 60 61 58 52 45 37 30 24 20 25 33 40 48 53 57 60 60 56 51 43 36 29 23 21 28 37 47 56 63 68 71 72 71 67 62 54 46 36 29 23 20 27 37 48 57 64 69 73 74 76 78 80 82 84 86 88 90 89 87 83 77 70 62 53 43 34 27 21 20 26 32 38 43 47 49 50 48 44 38 33 27 24 20 21 26 31 37 42 46 48 47 42 36 31 27 23 20 22 27 33 39 44 47 48 46 41 36 30 26 23 20 22 27 33 38".split(/\s+/).map(Number);
+// 官方随机曲线生成算法（平滑/安静/强劲/自定义区间）
+function generateCurve(opts) {
+  const { smooth = false, quiet = false, strong = false, min = null, max = null } = opts || {};
+  let mn = 0, mx = 100, bv = 50, vr = 50;
+  if (min !== null && max !== null && min !== '' && max !== '') { mn = Math.min(+min, +max); mx = Math.max(+min, +max); bv = (mn + mx) / 2; vr = (mx - mn) / 2; }
+  else if (quiet) { mn = 0; mx = 30; bv = 15; vr = 15; }
+  else if (strong) { mn = 70; mx = 100; bv = 85; vr = 20; }
+  const nd = []; for (let i = 0; i < 128; i++) { let r = bv + (Math.random() - 0.5) * vr; if (Math.random() < 0.1) r = mn + Math.random() * (mx - mn); nd.push(Math.min(mx, Math.max(mn, Math.round(r)))); }
+  if (smooth) for (let i = 1; i < 127; i++) nd[i] = Math.round((nd[i - 1] + nd[i] + nd[i + 1]) / 3);
+  return nd;
+}
+function formatVoltage(mv) { return `${(mv / 1000).toFixed(2)} V`; }
+function formatCurrent(ma) { return Math.abs(ma) >= 1000 ? `${(ma / 1000).toFixed(2)} A` : `${ma} mA`; }
+function formatPower(p) { return `${p.toFixed(2)} W`; }
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+</script>
+
+<script>
+/* ================= 应用层 ================= */
+
+const UUID = {
+  MAIN: '0000fff0-0000-1000-8000-00805f9b34fb', FFD0: '0000ffd0-0000-1000-8000-00805f9b34fb',
+  FFC0: '0000ffc0-0000-1000-8000-00805f9b34fb', FFE0: '0000ffe0-0000-1000-8000-00805f9b34fb',
+  FEE0: '0000fee0-0000-1000-8000-00805f9b34fb',
+  FFE1: '0000fee1-0000-1000-8000-00805f9b34fb', FFE2: '0000fee2-0000-1000-8000-00805f9b34fb'
+};
+// 特征键 → 服务归属（与官方页面一致）
+const CHAR = {
+  POWER: ['fff1', 'MAIN'], TIMER: ['fff2', 'MAIN'], FAN_SPEED: ['fff3', 'MAIN'], NATURE_WIND: ['fff4', 'MAIN'],
+  SHUTDOWN_DELAY: ['fff5', 'MAIN'], GEAR_DOWN_MODE: ['fff6', 'MAIN'], SPEED_CALIB: ['fff7', 'MAIN'],
+  TURBO_TIME: ['fff8', 'MAIN'], LIGHT_CONTROL: ['fffa', 'MAIN'], TURBO_REMAINING: ['fffb', 'MAIN'], TURBO_MODE: ['fffc', 'MAIN'],
+  BATTERY_INFO: ['ffd1', 'FFD0'], POWER_STATUS: ['ffd2', 'FFD0'], MOTOR_INFO: ['ffd3', 'FFD0'], POWER_Q2: ['ffd4', 'FFD0'],
+  BLE_SN: ['ffc1', 'FFC0'], NATURE_WIND_CURVE: ['ffe3', 'FFE0'], DFU_W: ['fee1', 'FEE0'], DFU_N: ['fee2', 'FEE0']
+};
+// 已知硬件 ID：0x0716:0x5103 = DeepFan（HID，64B 中断 IN/OUT，实测）；0x0E2C:0xA206 = 官方安卓 APK 内置（另一批次）
+const USB_VID = 0x0E2C, USB_PID = 0xA206, USB_VID2 = 0x0716, USB_PID2 = 0x5103;
+const USB_FILTERS = [{ vendorId: USB_VID }, { vendorId: USB_VID2 }];
+
+const S = {
+  type: null, isPro: false, ble: { device: null, lastDevice: null, server: null, services: {}, chars: {}, timer: null, turboOn: false, nwOn: false, power: '01', gearSpeeds: [10, 35, 70, 100] }, // gearSpeeds=设备每档标定风速（官方默认 10/35/70/100），切档按钮按下标值写 FAN_SPEED
+  usb: { device: null, ifaceNo: -1, inEp: null, outEp: null, reading: false, curGear: 0 },
+  hid: { device: null, buf: '', reportId: 0 },
+  pd: { pow1a: 0, pow1c: 0, pow1d: 0, powCIn: 0 },
+  busy: false,
+  lastTelemetryKey: null, // 老版遥测去重指纹
+  snOn: null,             // 蓝牙SN显示状态: true/false/null(未知)
+  snLock: false           // SN写入互斥
+};
+const $ = id => document.getElementById(id);
+function toast(msg, dur = 2200) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), dur); }
+const LOG_CAP = 200; let logBuf = []; // 统一日志：始终入缓冲，开关打开时才渲染
+function logTo(id, line) {
+  const stamp = new Date().toTimeString().slice(0, 8);
+  logBuf.unshift(`[${stamp}] ${line}`);
+  if (logBuf.length > LOG_CAP) logBuf.length = LOG_CAP;
+  if ($('logToggle').checked) renderLog();
+}
+function renderLog() { const el = $('usbLog'); el.textContent = logBuf.join('\n'); el.scrollTop = 0; }
+function usbLogClear() { logBuf = []; S.lastTelemetryKey = null; renderLog(); }
+
+/* ---------- 连接管理 ---------- */
+function setConnUI(type, text) {
+  $('connDot').className = type || ''; $('connText').textContent = text || (type === 'ble' ? '蓝牙已连接 · NEW W96D/W96Pro' : type === 'usb' ? 'USB已连接 · 老版 W96D' : type === 'hid' ? 'HID已连接 · 老版 W96D' : '未连接');
+  $('btnDisconnect').disabled = !type;
+  $('bleCtrl').style.display = type === 'ble' ? '' : 'none';
+  $('usbCtrl').style.display = (type === 'usb' || type === 'hid') ? '' : 'none';
+  $('usbCurveCard').style.display = (type === 'usb' || type === 'hid') ? '' : 'none';
+  $('bleCurveCard').style.display = type === 'ble' ? '' : 'none';
+  $('noConn').style.display = type ? 'none' : '';
+  $('btnConnectBle').disabled = !!type; $('btnConnectUsb').disabled = !!type; $('btnConnectHid').disabled = !!type;
+  // 按型号显隐功能标签页：快充(PRO 实验)仅蓝牙连接 且 用户打开 PRO 开关时显示
+  // PRO 实验（快充）标签：仅蓝牙连接且设备名为 W96P 时自动出现，无需开关
+  const showPd = type === 'ble' && S.isPro;
+  {
+    $('tabBtnPd').style.display = showPd ? '' : 'none';
+    // 设备信息页两个功能（BLE 名称SN / 电池容量）老版固件没有：USB/HID 连接时整个标签隐藏
+    const usbLike = type === 'usb' || type === 'hid';
+    $('tabBtnInfo').style.display = usbLike ? 'none' : '';
+    if (usbLike && $('tabInfo').classList.contains('active')) { // 若停在设备信息页自动跳回控制页
+      document.querySelector('.tabs button[data-tab="tabCtrl"]').click();
+    }
+    if (!showPd && $('tabPd').classList.contains('active')) document.querySelector('.tabs button[data-tab="tabCtrl"]').click(); // 停在快充页时跳回控制页
+  }
+  if (type === 'ble') renderLightCard();
+}
+// 连接按钮按平台与浏览器能力显隐：
+// 老版 W96D 是 HID 类设备 → WebUSB 属"受保护类"全平台被 Chrome 禁止声明（安卓真机已实测）。
+// 浏览器唯一通道是 WebHID。安卓 Chrome 默认无 WebHID，但可开实验 flag：
+//   chrome://flags → 搜索 web-hid-on-android → Enabled → 重启浏览器 → 安卓也能点「连接HID」
+// 逻辑以能力检测（navigator.hid）为准，flag 开了按钮自动出现。
+(function initConnButtons() {
+  const ua = navigator.userAgent, win = /Windows/i.test(ua), android = /Android/i.test(ua);
+  const hasUsb = !!navigator.usb, hasHid = !!navigator.hid;
+  const showHid = hasHid;
+  if (showHid) $('btnConnectHid').style.display = '';
+  if (!showHid) $('btnConnectUsb').style.display = hasUsb ? '' : 'none'; // 无 WebHID 时留 USB 入口（受保护类会给出明确报错）
+  if (hasHid && android) {
+    $('connHint').innerHTML = '检测到 <b>安卓 + WebHID（实验 flag 已开）</b>：老版 W96D 点「连接HID」直连；NEW W96D / W96Pro 点「连接蓝牙」。';
+  } else if (hasHid) {
+    $('connHint').innerHTML = (win ? '检测到 <b>Windows</b>：' : '') + '老版 W96D 点「连接HID」（设备为 HID 类，同官方电脑版）；NEW W96D / W96Pro 点「连接蓝牙」。已知 ID <code>0x0716:0x5103</code>（DeepFan）/ <code>0x0E2C:0xA206</code>。';
+  } else if (android) {
+    $('connHint').innerHTML = '检测到 <b>安卓</b>：正式版 Chrome 暂无法直连老版 W96D（HID 受保护类，WebHID 要等 Chrome 157 官方支持，当前仅 Canary/Dev 版有实验 flag <code>web-hid-on-android</code>）。<b>现状方案：</b>① NEW W96D / W96Pro 正常点「连接蓝牙」；② 老版请用电脑版 Chrome「连接HID」，或等 Chrome 157 正式发布后手机直接用。';
+  } else if (hasUsb) {
+    $('connHint').innerHTML = '当前浏览器无 WebHID。老版 W96D 为 HID 受保护类，WebUSB 无法声明（点「连接USB」会报 protected class）；建议换桌面版 Chrome。NEW W96D / W96Pro 可正常连接蓝牙。';
+  }
+})();
+function disconnect() {
+  if (S.type === 'ble') { clearInterval(S.ble.timer); try { S.ble.device?.gatt.disconnect(); } catch (e) { } cleanupBle(); }
+  if (S.type === 'usb') { S.usb.reading = false; try { S.usb.device.close(); } catch (e) { } S.usb.device = null; }
+  if (S.type === 'hid') { try { S.hid.device.close(); } catch (e) { } S.hid.device = null; S.hid.buf = ''; }
+  pwSamples = []; pwHistory = []; // 功率统计随连接重置
+  S.type = null; setConnUI(null); toast('已断开');
+}
+function cleanupBle() { if (S.ble.device) S.ble.lastDevice = S.ble.device; S.ble.device = null; S.ble.services = {}; S.ble.chars = {}; clearInterval(S.ble.timer); }
+
+async function connectBle() {
+  if (!navigator.bluetooth) return toast('此浏览器不支持 Web Bluetooth，请用 Chrome/Edge');
+  try {
+    toast('正在扫描...');
+    const device = await navigator.bluetooth.requestDevice({
+      filters: [{ namePrefix: 'W96D' }, { namePrefix: 'W96P' }], // W96D=NEW版, W96P=Pro版（同官方两版页面的过滤方式）
+      optionalServices: [UUID.MAIN, UUID.FFD0, UUID.FFC0, UUID.FFE0, UUID.FEE0]
+    });
+    S.isPro = /96P/i.test(device.name || ''); // Pro 才有 5 档灯光与快充
+    device.addEventListener('gattserverdisconnected', () => { if (S.type === 'ble') { cleanupBle(); S.type = null; setConnUI(null); logTo('usbLog', '== 蓝牙已断开 =='); toast('蓝牙已断开'); } });
+    await bleDiscover(device);
+    S.type = 'ble'; setConnUI('ble');
+    logTo('usbLog', `== 蓝牙已连接: ${device.name || 'W96D'}${S.isPro ? ' (Pro)' : ''} ==`);
+    setTimeout(readAllBleInit, 800);
+    clearInterval(S.ble.timer); S.ble.timer = setInterval(refreshBleRealtime, 3000);
+  } catch (e) { if (!/cancel/i.test(e.message || '')) toast('连接失败: ' + e.message); }
+}
+// 设备→服务/特征发现（connectBle 使用）
+async function bleDiscover(device) {
+  const server = await device.gatt.connect();
+  S.ble.device = device; S.ble.server = server;
+  for (const [name, uuid] of [['MAIN', UUID.MAIN], ['FFD0', UUID.FFD0], ['FFC0', UUID.FFC0], ['FFE0', UUID.FFE0], ['FEE0', UUID.FEE0]]) {
+    try { S.ble.services[name] = await server.getPrimaryService(uuid); } catch (e) { console.warn('无服务', name); }
+  }
+  for (const [key, [u4]] of Object.entries(CHAR)) {
+    const svcName = CHAR[key][1], svc = S.ble.services[svcName]; if (!svc) continue;
+    for (let r = 0; r < 3; r++) {
+      try { S.ble.chars[key] = await svc.getCharacteristic('0000' + u4 + '-0000-1000-8000-00805f9b34fb'); break; }
+      catch (e) { if (r === 2) console.warn('无特征', key); else await sleep(100); }
+    }
+  }
+  // 显式校验 DFU 句柄是否取到：连接成功但服务/特征缺失时，读取版本/SN 会一路报「DFU 服务不可用」（22:58 实测踩过）
+  if (S.ble.chars.DFU_N) { try { await S.ble.chars.DFU_N.startNotifications(); } catch (e) { } }
+  const missing = Object.entries(CHAR).filter(([k]) => !S.ble.chars[k]).map(([k]) => k);
+  if (missing.length) console.warn('未取到特征:', missing.join(','));
+  if (!S.ble.chars.DFU_W || !S.ble.chars.DFU_N) console.warn('DFU 特征未取到（不影响风扇控制，仅设备信息页的版本/SN 读不到）');
+  return true;
+}
+function charOf(key) { return S.ble.chars[key]; }
+const CHAR_NAME = { POWER: '电源', TIMER: '定时', FAN_SPEED: '转速', NATURE_WIND: '自然风', SHUTDOWN_DELAY: '休眠', GEAR_DOWN_MODE: '按键模式', SPEED_CALIB: '档位标定', TURBO_TIME: 'Turbo时长', LIGHT_CONTROL: '灯光', TURBO_REMAINING: 'Turbo剩余', TURBO_MODE: 'Turbo开关', BLE_SN: 'SN显示', NATURE_WIND_CURVE: '自然风曲线', BATTERY_INFO: '电池信息', POWER_STATUS: '电源状态', MOTOR_INFO: '电机信息', POWER_Q2: '快充配置', DFU_W: 'DFU写', DFU_N: 'DFU通知' };
+const bytesHex = b => Array.from(b, x => x.toString(16).padStart(2, '0')).join(' ');
+async function writeBytes(key, bytes, preferNoResp = false) {
+  const c = charOf(key); if (!c) throw new Error('特征不可用: ' + key);
+  if (preferNoResp && c.properties.writeWithoutResponse) await c.writeValueWithoutResponse(bytes); else await c.writeValue(bytes);
+  const printable = bytes.length > 0 && [...bytes].every(x => x >= 0x20 && x <= 0x7e);
+  logTo('usbLog', `>> [${CHAR_NAME[key] || key}] ${bytesHex(bytes)}${printable ? '  "' + new TextDecoder().decode(bytes) + '"' : ''}`);
+}
+async function writeHex(key, hexStr) { return writeBytes(key, hexStringToBytes(hexStr)); }
+async function writeAscii(key, text) { return writeBytes(key, new TextEncoder().encode(text)); }
+// 读日志：轮询特征同值不重复刷屏；非轮询读取（点按钮/初始化）每次都记
+const pollKeys = new Set(['FAN_SPEED', 'BATTERY_INFO', 'POWER_STATUS', 'MOTOR_INFO', 'TURBO_REMAINING', 'NATURE_WIND', 'GEAR_DOWN_MODE', 'LIGHT_CONTROL', 'SHUTDOWN_DELAY']);
+let lastPollHex = {};
+function logRead(key, dv) {
+  const hex = bytesHex(new Uint8Array(dv.buffer, dv.byteOffset, dv.byteLength));
+  // 蓝牙轮询遥测也受"遥测日志"开关控制（与 HID/USB 遥测行为一致）；操作类读取每次都记
+  if (pollKeys.has(key)) {
+    if (!$('telLogToggle').checked) return;
+    if (lastPollHex[key] === hex) return;
+    lastPollHex[key] = hex;
+  }
+  logTo('usbLog', `<< [${CHAR_NAME[key] || key}] ${hex}`);
+}
+async function readDv(key) { const c = charOf(key); if (!c) return null; const dv = new DataView((await c.readValue()).buffer); logRead(key, dv); return dv; }
+
+async function ensureTurboOff() { if (S.ble.turboOn) { await writeHex('TURBO_MODE', '00'); S.ble.turboOn = false; updModeBtns(); await sleep(100); } }
+async function ensureNwOff() { if (S.ble.nwOn) { await writeHex('NATURE_WIND', '00'); S.ble.nwOn = false; updModeBtns(); await sleep(100); } }
+function updModeBtns() {
+  const tb = $('bleTurbo'), nb = $('bleNW');
+  tb.textContent = 'Turbo ' + (S.ble.turboOn ? 'ON' : 'OFF'); tb.className = 'btn ' + (S.ble.turboOn ? 'btn-on' : '');
+  nb.textContent = '自然风 ' + (S.ble.nwOn ? 'ON' : 'OFF'); nb.className = 'btn ' + (S.ble.nwOn ? 'btn-on' : '');
+}
+async function guard() { if (S.type !== 'ble') { toast('请先连接蓝牙设备'); return true; } if (S.busy) { toast('操作进行中...'); return true; } return false; }
+
+async function bleSetPower(on) {
+  if (await guard()) return; S.busy = true;
+  try {
+    if (on) { await writeHex('POWER', '01'); S.ble.power = '01'; }
+    else { await ensureTurboOff(); await ensureNwOff(); await writeHex('POWER', '00'); S.ble.power = '00'; }
+    toast(on ? '已开机' : '已关机');
+  } catch (e) { toast('失败: ' + e.message); } finally { S.busy = false; }
+}
+async function bleSetGear(g) {
+  if (await guard()) return; S.busy = true;
+  try { if (await ensureTurboOff()) ; if (S.ble.power === '00') { await writeHex('POWER', '01'); S.ble.power = '01'; } await sleep(50);
+    // 设固件按 SPEED_CALIB 每档标定风速判档（官方默认 10/35/70/100），写 g*25 会落错档（实测 25→2档、50→3档），必须写该档标定值
+    const sp = (S.ble.gearSpeeds && S.ble.gearSpeeds[g - 1]) || g * 25;
+    await writeHex('FAN_SPEED', speedToHex(sp)); toast(`已切 ${g} 档（风速 ${sp}%）`); }
+  catch (e) { toast('失败: ' + e.message); } finally { S.busy = false; }
+}
+let speedTimer = null;
+function blePushSpeed(v) {
+  $('bleSpeedVal').textContent = v + '%';
+  clearTimeout(speedTimer);
+  speedTimer = setTimeout(async () => {
+    if (S.type !== 'ble') return; S.busy = true;
+    try {
+      if (S.ble.power === '00') { await ensureTurboOff(); await ensureNwOff(); await writeHex('POWER', '01'); S.ble.power = '01'; }
+      await writeHex('FAN_SPEED', speedToHex(v), true);
+    } catch (e) { } finally { S.busy = false; }
+  }, 200);
+}
+async function bleToggleTurbo() {
+  if (await guard()) return; S.busy = true;
+  try { const want = !S.ble.turboOn; if (want) { await ensureNwOff(); await sleep(100); } await writeHex('TURBO_MODE', want ? '01' : '00'); S.ble.turboOn = want; updModeBtns(); toast(want ? 'Turbo 已开启' : 'Turbo 已退出'); }
+  catch (e) { toast('失败: ' + e.message); } finally { S.busy = false; }
+}
+async function bleToggleNW() {
+  if (await guard()) return; S.busy = true;
+  try { const want = !S.ble.nwOn; if (want) { await ensureTurboOff(); await sleep(100); } await writeHex('NATURE_WIND', want ? '01' : '00'); S.ble.nwOn = want; updModeBtns(); toast(want ? '自然风已开启' : '自然风已关闭'); }
+  catch (e) { toast('失败: ' + e.message); } finally { S.busy = false; }
+}
+async function bleSetTurboTime() {
+  if (await guard()) return; let s = parseInt($('bleTurboTime').value); if (isNaN(s) || s < 0 || s > 600) return toast('范围 0-600 秒');
+  try { await writeHex('TURBO_TIME', s.toString(16).padStart(4, '0').toUpperCase()); toast(s === 0 ? '已恢复默认199秒' : `Turbo 时长 ${s}s`); } catch (e) { toast('失败: ' + e.message); }
+}
+async function bleSetTimer(min) {
+  if (await guard()) return;
+  try { if (min === 0) await writeHex('TIMER', '0000'); else { if (min < 1 || min > 480) return toast('1-480 分钟'); await writeHex('TIMER', (min * 60).toString(16).padStart(4, '0').toUpperCase()); } await readTimerRemain(); toast(min === 0 ? '定时已取消' : `定时 ${min} 分钟`); }
+  catch (e) { toast('失败: ' + e.message); }
+}
+async function bleSetSleep(sec) {
+  if (await guard()) return;
+  try { if (sec > 0 && sec < 10) { sec = 10; $('bleSleep').value = 10; } await writeHex('SHUTDOWN_DELAY', sec.toString(16).padStart(4, '0').toUpperCase()); await sleep(300); toast(sec === 0 ? '已设为永不休眠' : `${sec}秒后休眠`); }
+  catch (e) { toast('失败: ' + e.message); }
+}
+// 灯光：NEW(W96D) 只有 关灯/恢复正常 两档；Pro(W96P) 有 5 档亮度（与官方两版页面一致）
+const LIGHT_MAP_PRO = { '00': '关灯', '01': '低亮度', '02': '中低亮度', '03': '中高亮度', '04': '最高亮度' };
+const LIGHT_MAP_NEW = { '00': '一键关灯', '01': '恢复正常' };
+const LIGHT_LEVELS_PRO = ['00', '01', '02', '03', '04'];
+const LIGHT_LEVELS_NEW = ['00', '01'];
+function lightMap() { return S.isPro ? LIGHT_MAP_PRO : LIGHT_MAP_NEW; }
+function lightLevels() { return S.isPro ? LIGHT_LEVELS_PRO : LIGHT_LEVELS_NEW; }
+function renderLightCard() {
+  const box = $('lightBtns'); if (!box) return;
+  box.innerHTML = lightLevels().map(hx => `<button class="btn lightBtn" data-brightness="${hx}">${lightMap()[hx]}</button>`).join('');
+  box.querySelectorAll('.lightBtn').forEach(b => b.onclick = () => bleSetLight(b.dataset.brightness));
+  updLightBtns($('lightCur').dataset.cur || '');
+}
+let lightLock = false;
+async function bleSetLight(hex) {
+  if (await guard()) return;
+  if (lightLock) return toast('请稍候...');
+  lightLock = true;
+  try {
+    let ok = false;
+    for (let attempt = 1; attempt <= 3; attempt++) { // 官方做法：失败重试至 3 次
+      if (attempt > 1) await sleep(300);
+      try { await writeHex('LIGHT_CONTROL', hex); ok = true; break; } catch (e) { if (attempt === 3) throw e; await sleep(200); }
+    }
+    if (!ok) throw new Error('写入失败');
+    const label = lightMap()[hex] || hex;
+    $('lightCur').textContent = '当前亮度:' + label;
+    $('lightCur').dataset.cur = hex;
+    updLightBtns(hex);
+    toast('灯光: ' + label);
+  } catch (e) { toast('灯光设置失败: ' + e.message); }
+  finally { lightLock = false; }
+}
+function updLightBtns(hex) { document.querySelectorAll('.lightBtn').forEach(b => b.classList.toggle('btn-on', b.dataset.brightness === hex)); }
+async function bleToggleGearDown() {
+  if (await guard()) return;
+  try { const dv = await readDv('GEAR_DOWN_MODE'); const cur = dv && dv.byteLength >= 1 ? dv.getUint8(0) : 0; const next = cur === 0 ? '01' : '00'; await writeHex('GEAR_DOWN_MODE', next); toast(next === '01' ? '「−」键: 按住直接停' : '「−」键: 逐级降档'); }
+  catch (e) { toast('失败: ' + e.message); }
+}
+async function bleApplyCalib() {
+  if (await guard()) return;
+  const v = [1, 2, 3, 4].map(i => parseInt($('calib' + i).value));
+  if (v.some(x => isNaN(x) || x < 0 || x > 100)) return toast('标定值需在 0-100');
+  try { await writeHex('SPEED_CALIB', v.map(x => x.toString(16).padStart(2, '0').toUpperCase()).join('')); S.ble.gearSpeeds = v.slice(); toast('档位标定已应用'); } catch (e) { toast('失败: ' + e.message); }
+}
+// 读设备当前档位标定风速（fff7，4字节）→ 回填输入框与 gearSpeeds（切档按钮按此写 FAN_SPEED 才能落对档）
+async function bleReadCalib() {
+  try {
+    const dv = await readDv('SPEED_CALIB');
+    if (dv && dv.byteLength >= 4) {
+      const v = [0, 1, 2, 3].map(i => dv.getUint8(i));
+      S.ble.gearSpeeds = v.slice();
+      v.forEach((s, i) => { const el = $('calib' + (i + 1)); if (el) el.value = s; });
+      logTo('usbLog', '<< 档位标定风速: ' + v.join('/'));
+    }
+  } catch (e) { /* 读不到保持默认 */ }
+}
+
+/* ---------- BLE 读取 ---------- */
+async function readTimerRemain() { try { const dv = await readDv('TIMER'); if (dv && dv.byteLength >= 2) { const s = dv.getUint16(0, false); $('bleTimerRemain').textContent = `剩余: ${Math.floor(s / 60)}分${s % 60}秒`; } } catch (e) { } }
+async function refreshBleRealtime() {
+  if (S.type !== 'ble' || S.busy || document.hidden) return;
+  try { const dv = await readDv('FAN_SPEED'); if (dv && dv.byteLength >= 1) { const sp = dv.getUint8(0); $('rtSpeed').textContent = sp + ' %'; $('bleSpeedVal').textContent = sp + '%'; } } catch (e) { }
+  try { const dv = await readDv('BATTERY_INFO'); if (dv && dv.byteLength >= 8) { const bi = parseBatteryInfo(dv); $('rtBv').textContent = formatVoltage(bi.voltage); $('rtBi').textContent = formatCurrent(bi.current); $('rtBc').textContent = bi.capacity + ' mWh'; $('rtBp').textContent = formatPower(bi.voltage / 1000 * bi.current / 1000); $('rtBp').style.color = bi.current >= 0 ? 'var(--on)' : 'var(--off)'; $('batCapCur').textContent = `当前容量:${bi.capacity} mWh`; } } catch (e) { }
+  try { const dv = await readDv('POWER_STATUS'); if (dv && dv.byteLength >= 8) { const pi = parsePowerStatus(dv); $('rtVv').textContent = formatVoltage(pi.vbusVoltage); $('rtVi').textContent = formatCurrent(pi.vbusCurrent); $('rtChg').textContent = pi.chargeStatus === 1 ? '⚡充电中' : '🔋放电中'; } } catch (e) { }
+  try { const dv = await readDv('MOTOR_INFO'); if (dv && dv.byteLength >= 3) { const mi = parseMotorInfo(dv); $('rtMot').textContent = formatCurrent(mi.rawCurrent) + ' / ' + formatVoltage(mi.voltage); $('rtMp').textContent = formatPower(mi.voltage / 1000 * mi.rawCurrent / 1000); } } catch (e) { }
+  try { const dv = await readDv('TURBO_REMAINING'); if (dv && dv.byteLength >= 2) { const r = dv.getUint16(0, false); $('bleTurboRemain').textContent = 'Turbo 剩余:' + (r > 0 ? r + 's' : '--'); if (r > 0 !== S.ble.turboOn) { S.ble.turboOn = r > 0; updModeBtns(); } } } catch (e) { }
+  try { const dv = await readDv('NATURE_WIND'); if (dv && dv.byteLength >= 1) { const on = dv.getUint8(0) === 1; if (on !== S.ble.nwOn) { S.ble.nwOn = on; updModeBtns(); } } } catch (e) { }
+  try { const dv = await readDv('GEAR_DOWN_MODE'); if (dv && dv.byteLength >= 1) { const m = dv.getUint8(0); $('bleGearDownBadge').textContent = m === 0 ? '逐级降档' : m === 1 ? '直接停' : '?'; } } catch (e) { }
+  try { const dv = await readDv('LIGHT_CONTROL'); if (dv && dv.byteLength >= 1) { const hv = dv.getUint8(0).toString(16).padStart(2, '0'); $('lightCur').textContent = '当前亮度:' + (lightMap()[hv] || '未知(' + hv + ')'); $('lightCur').dataset.cur = hv; updLightBtns(hv); } } catch (e) { }
+  try { const dv = await readDv('SHUTDOWN_DELAY'); if (dv && dv.byteLength >= 2) { const d = dv.getUint16(0, false); $('bleSleepCur').textContent = '当前:' + (d === 0 ? '永不' : d + '秒'); } } catch (e) { }
+}
+async function readAllBleInit() { updModeBtns(); await readTimerRemain(); await refreshBleRealtime(); await bleReadCalib(); readDeviceInfo().catch(() => { }); bleSnRead().catch(() => { }); } // 版本/SN/SN显示状态/档位标定 连接后自动读取
+
+/* ---------- DFU 请求/应答（FEE0）——设备信息读取 + OTA 握手 ---------- */
+async function dfuRequest(payload, expectCmd, timeoutMs = 5000) {
+  const w = charOf('DFU_W'), n = charOf('DFU_N');
+  if (!w || !n) throw new Error('DFU 服务不可用');
+  const rx = makeRx(), results = [];
+  const h = e => { if (!e.target.value) return; const u8 = new Uint8Array(e.target.value.buffer, e.target.value.byteOffset, e.target.value.byteLength); onDfuReceive(rx, u8, results, u8); };
+  n.addEventListener('characteristicvaluechanged', h);
+  try {
+    const frame = dfuPack(payload, 0);
+    logTo('usbLog', `>> [DFU] cmd=0x${payload[0].toString(16).padStart(2, '0')} 帧=${bytesHex(frame)}`);
+    await w.writeValueWithoutResponse(frame);
+    const t0 = Date.now();
+    while (true) {
+      if (results.length > 0) {
+        const r = results.shift();
+        const c = r[0] & 0x7f;
+        const hit = expectCmd === undefined || (Array.isArray(expectCmd) ? expectCmd.includes(c) : c === expectCmd);
+        if (hit) { logTo('usbLog', `<< [DFU] 应答${r.badCrc ? '(CRC 不符，宽容采用)' : ''}=${bytesHex(r)}`); return r; }
+        logTo('usbLog', `<< [DFU] 丢弃错位应答=${bytesHex(r)}`);
+        continue;
+      }
+      if (Date.now() - t0 > timeoutMs) {
+        if (rx.stage !== RxStage.WAIT_HEAD) logTo('usbLog', `[RX] 超时：残留半个帧（key=0x${rx.key.toString(16)} 已收 ${rx.idx}/${rx.len + 1} 字节）${rx.raw ? '｜最近通知=' + bytesHex(rx.raw) : ''}`);
+        throw new Error('DFU 超时');
+      }
+      await sleep(50);
+    }
+  } finally { n.removeEventListener('characteristicvaluechanged', h); }
+}
+async function readDeviceInfo() {
+  if (S.type !== 'ble') return;
+  try {
+    const vp = await dfuRequest([0x8A]);
+    if ((vp[0] & 0x7f) === 4 && vp.length >= 2) { const m = vp[1]; S.ble.fwVer = m; $('infoVer').textContent = `V${Math.floor(m / 10)}.${m % 10}`; } else $('infoVer').textContent = '解析失败';
+  } catch (e) { $('infoVer').textContent = '读取失败'; }
+  try {
+    const sp = await dfuRequest([0x8F]);
+    if ((sp[0] & 0x7f) === 10 && sp.length >= 5) { $('infoSn').textContent = String(sp[1] | (sp[2] << 8) | (sp[3] << 16) | (sp[4] << 24)); } else $('infoSn').textContent = '解析失败';
+  } catch (e) { $('infoSn').textContent = '读取失败'; }
+}
+/* ---------- DFU 应答通路测试（安全：只发查询/解锁帧，不发 0x87 擦除） ----------
+   动机：沁恒官方 OTA 的网页实现（sintrb/WCHOTA、ZHANGHengEE/WCH_BLE_OTA）都是
+   「写命令 → delay → readValue()」取结果，而 WCH 的 OTA 特征本身就是可读可写的。
+   本工具此前只监听 FEE2 通知 ⇒ 若 W96D 的应答走"读特征值"，在我们眼里就是"静默"。
+   本测试对每种命令同时观察【通知】与【读回】两条通路并对比。 */
+async function dfuReadCharHex(w) {
+  try {
+    const dv = await w.readValue();
+    const u8 = new Uint8Array(dv.buffer, dv.byteOffset, dv.byteLength);
+    return { ok: true, hex: bytesHex(u8), len: u8.length };
+  } catch (e) { return { ok: false, err: (e && e.message) || String(e) }; }
+}
+async function dfuWriteFrameOnce(frame, mode) {
+  const w = charOf('DFU_W');
+  if (mode === 'req') await w.writeValueWithResponse(frame); else await w.writeValueWithoutResponse(frame);
+}
+async function dfuReadProbe() {
+  if (S.type !== 'ble') return toast('请先连接蓝牙设备');
+  const w = charOf('DFU_W'), n = charOf('DFU_N');
+  if (!w || !n) return toast('DFU 服务不可用（请先连接风扇）');
+  const props = w.properties || {};
+  const out = $('dfuReadProbeOut');
+  logTo('usbLog', `== DFU 应答通路测试开始 ==`);
+  logTo('usbLog', `[通路] FEE1 属性: read=${!!props.read} write=${!!props.write} writeWithoutResponse=${!!props.writeWithoutResponse}｜FEE2 notify=${!!(n.properties||{}).notify}`);
+  const setOut = t => { if (out) out.textContent = t; };
+
+  // ① 纯读基线
+  const base = await dfuReadCharHex(w);
+  logTo('usbLog', `[通路] ① 基线读 FEE1: ${base.ok ? '读回=' + base.hex + `（${base.len}B）` : '不支持/失败：' + base.err}`);
+
+  // ② 小命令用已知会应答的 0x8A：同时看通知与读回
+  async function probe(payload, label, waitMs, mode) {
+    const rx = makeRx(), results = [];
+    const h = e => { if (!e.target.value) return; const u8 = new Uint8Array(e.target.value.buffer, e.target.value.byteOffset, e.target.value.byteLength); onDfuReceive(rx, u8, results, u8); };
+    n.addEventListener('characteristicvaluechanged', h);
+    let sendErr = null;
+    const frame = dfuPack(payload, 0);
+    try { await dfuWriteFrameOnce(frame, mode); } catch (e) { sendErr = (e && e.message) || String(e); }
+    const t0 = Date.now();
+    while (results.length === 0 && Date.now() - t0 < waitMs) await sleep(50);
+    n.removeEventListener('characteristicvaluechanged', h);
+    const notified = results.length ? bytesHex(results[0]) + `@${Date.now() - t0}ms` : '无';
+    const rd = await dfuReadCharHex(w);
+    logTo('usbLog', `[通路] ${label}｜帧 ${frame.length}B（${mode === 'req' ? '带响应写' : '无响应写'}）${sendErr ? ' 写失败=' + sendErr : ''}｜通知=${notified}｜读回=${rd.ok ? (rd.hex || '(空)') : '失败:' + rd.err}`);
+    return { notified, read: rd.ok ? rd.hex : null, results: results.slice() };
+  }
+  const r2 = await probe([0x0A | 0x80], '② 小命令 0x8A（已知会回 04 0d）', 2500, 'cmd');
+
+  // ③ 真解锁帧（若选了固件文件）
+  let hdr = null;
+  const fi = $('dfuProbeFile');
+  if (fi && fi.files && fi.files[0]) {
+    const ab = await fi.files[0].arrayBuffer();
+    hdr = new Uint8Array(ab).slice(0, 96);
+    logTo('usbLog', `[通路] ③ 使用文件 ${fi.files[0].name} 的头部 96B（体 ${ab.byteLength - 96}B）`);
+  } else {
+    hdr = new Uint8Array(96);
+    logTo('usbLog', '[通路] ③ 未选固件文件：用 96 个 0x00 作头部（仅测通路，内容可能不被设备接受）');
+  }
+  const r3 = await probe([0x01 | 0x80, ...hdr], '③ 解锁帧 0x81+头96B', 3000, 'req');
+  const r4 = await probe([0x01 | 0x80, ...hdr], '④ 解锁帧（无响应写复测）', 3000, 'cmd');
+
+  // ⑤ 再看一次基线，判断"读回是否随命令变化"
+  const after = await dfuReadCharHex(w);
+  logTo('usbLog', `[通路] ⑤ 收尾读 FEE1: ${after.ok ? '读回=' + (after.hex || '(空)') : '失败:' + after.err}`);
+
+  const norm = x => (x || '').replace(/\s/g, '');
+  const b0 = base.ok ? norm(base.hex) : '', a2 = norm(r2.read), a3 = norm(r3.read), a4 = norm(r4.read);
+  let verdict;
+  if (a3 && a3 !== b0 && a3 !== a2) verdict = '★解锁帧后读回值发生变化 ⇒ 设备很可能用 readValue 返回解锁应答（此前只等通知，漏掉了）';
+  else if (a2 && a2 !== b0) verdict = '★读回随命令变化（0x8A 之后 ≠ 基线）⇒ 应答可以经 readValue 读取';
+  else if (a3 || a4) verdict = '读回有内容，但与基线/小命令相同 ⇒ 可能只是静态寄存器值，不是应答';
+  else verdict = '读回始终与基线一致或为空 ⇒ 读回不是应答通路（回到"设备确实没解析该帧"的结论）';
+  setOut(`通知：0x8A=${r2.notified}；解锁帧=${r3.notified} / ${r4.notified}｜读回：0x8A=${r2.read ?? '—'}；解锁=${r3.read ?? '—'}｜结论：${verdict}`);
+  logTo('usbLog', `== 测试结论：${verdict} ==`);
+  if (r3.results.length) logTo('usbLog', `== 解锁帧通过通知收到：${bytesHex(r3.results[0])} ==`);
+}
+/* ---------- 帧长边界测试（只读命令，不擦除） ----------
+   假设来源：W96D 主控是沁恒 CH592F，其 DFU 服务 UUID 与沁恒官方 OTA profile 一致（0xFEE0/0xFEE1），
+   而该 profile 的写缓冲为 OTAProfileWriteBuf[IAP_LEN]，老版 IAP 里 IAP_LEN=20 ⇒ 若设备照搬，
+   则"每条 BLE 写入必须是一整帧且 ≤20B"，这能解释：小帧有回、102B 整帧被丢、20B 分片被逐片误解析。
+   做法：用只读命令 0x8A（应答固定 04 0d）加填充字节，帧长从 6B 逐字节加到 41B，找"从多少字节开始不再应答"。 */
+/* ---------- 进入 DFU/升级模式（仅诊断用：发 0x84，不擦除；设备重启后自动重连） ---------- */
+// 等设备主动断链 → 重连（校验 DFU 句柄）→ CHECK_IN 确认
+async function dfuWaitReconnect(devOverride) {
+  // 注意：cleanupBle() 会把 S.ble.device 置空，断开事件又早于本函数执行 ⇒ 必须用 lastDevice/显式句柄兜底
+  const dev = devOverride || S.ble.lastDevice || S.ble.device;
+  if (!dev || !dev.gatt) { logTo('usbLog', '[DFU] ❌ 没有可用的设备句柄，无法自动重连（请手动点「连接蓝牙」选设备后重试）'); return false; }
+  { const w0 = Date.now(); while (S.type === 'ble' && Date.now() - w0 < 10000) await sleep(300); }
+  logTo('usbLog', S.type !== 'ble' ? `[DFU] 设备已断链（重启中），开始重连` : `[DFU] 10s 未见断链，仍尝试重连`);
+  let ok = false, lastErr = '';
+  for (let r = 0; r < 25 && !ok; r++) {
+    await sleep(1200);
+    if (!dev || !dev.gatt) { lastErr = '设备句柄丢失'; break; }
+    try { S.ble.services = {}; S.ble.chars = {}; await bleDiscover(dev); ok = !!(S.ble.chars.DFU_W && S.ble.chars.DFU_N); }
+    catch (e) { lastErr = e.message; if (r % 5 === 4) logTo('usbLog', `[DFU] 重连第 ${r + 1} 次失败：${e.message}`); }
+  }
+  if (!ok) { logTo('usbLog', `[DFU] ❌ 重连失败（尝试 25 次，最后错误：${lastErr || '未知'}）`); return false; }
+  await sleep(800); S.type = 'ble'; setConnUI('ble');
+  logTo('usbLog', `[DFU] 重连成功（FEE2 notify 已订阅）｜DFU_W=${!!S.ble.chars.DFU_W} DFU_N=${!!S.ble.chars.DFU_N}`);
+  S.ble.lastCheckIn = null;
+  try { const ci = await dfuRequest([0x05 | 0x80], [0x01, 0x02], 2500); S.ble.lastCheckIn = ci[0] & 0x7f; logTo('usbLog', `[DFU] 重连后 CHECK_IN=${bytesHex(ci)}（${S.ble.lastCheckIn === 2 ? '已在 DFU ✅' : '仍非 DFU'}）`); }
+  catch (e) { logTo('usbLog', `[DFU] 重连后 CHECK_IN 无应答：${e.message}`); }
+  return true;
+}
+async function dfuIsDfu() {
+  try { const ci = await dfuRequest([0x05 | 0x80], [0x01, 0x02], 2500); return (ci[0] & 0x7f) === 2; }
+  catch (e) { return null; } // null = 无应答（可能正在重启/未连上）
+}
+async function dfuEnterMode() {
+  const inDfu = await dfuIsDfu();
+  if (inDfu === true) { logTo('usbLog', '[DFU] 已在 DFU/升级模式'); return true; }
+  try { await dfuRequest([0x04 | 0x80], [0x01, 0x02], 3000); logTo('usbLog', '[DFU] 已发送 0x84 ENTER_DFU（02），设备将重启'); }
+  catch (e) { logTo('usbLog', `[DFU] 0x84 无应答（${e.message}），仍等待断链`); }
+  return dfuWaitReconnect('dfu');
+}
+/* ---------- 照抄微信小程序：DFU 初始化 → 0x84+0x8F 切换 → 0x85/0x8C → 解锁头（不发 0x87，不擦除） ----------
+   ★ 2026-09-25 依官方小程序成功刷机的 HCI 抓包逐字节校准（BT_HCI_*.cfa）：
+       75763  8F → SN(0a 7b 00 00 00)
+       75921  8F → SN              76067  8A → 04 0d
+       76213  85 → 01(应用态)      76360  84 → 02
+       76506  8F「切换命令」← 只比 0x84 的应答晚 59ms，**同一条连接**上发出，设备无应答并随即失联
+       81475  链路以 reason=0x08（5s 监督超时）断开（本机未发 HCI Disconnect）
+       82035  重连（同地址，不用重扫）→ MTU 应答 243→247 → 重订阅 FEE2（CCCD 0x13 ← 0100）
+       83737  85 → 02(传输阶段)     83823  8C → 05 00 10
+       83920  81+头96B（整帧 102B）→ **02**   84917  87 → 02
+   ⇒ ① 切换必须"**0x84 应答后立刻、在同一条旧连接上发 0x8F**"，不能等断链重连后再发：
+        我们此前就是等重连后才发，设备只把它当普通 SN 查询回 0a+SN，切换从未发生。
+     ② 解锁帧的应答是 **02**（裸 0x81 才回 01）——此前 expect 漏了 02，成功的解锁会被当"错位应答"丢掉。
+   本测试只走到"解锁被确认"为止（不发 0x87，故不会擦除）。 */
+async function dfuMimicUnlock() {
+  if (S.type !== 'ble') return toast('请先连接蓝牙设备');
+  const w = charOf('DFU_W'); if (!w) return toast('DFU 服务不可用');
+  const fi = $('dfuProbeFile');
+  if (!fi || !fi.files || !fi.files[0]) return toast('请先在上方选择固件文件（.up）以取得头部 96B');
+  const ab = await fi.files[0].arrayBuffer();
+  const hdr = new Uint8Array(ab).slice(0, 96);
+  const send = async (payload, label, expect, wait = 2500) => {
+    try { const r = await dfuRequest(payload, expect, wait); logTo('usbLog', `[仿真] ${label} → 应答=${bytesHex(r)}`); return r; }
+    catch (e) { logTo('usbLog', `[仿真] ${label} → 无应答（${e.message}）`); return null; }
+  };
+  const out = $('dfuReadProbeOut');
+  logTo('usbLog', `== 照抄小程序流程开始（固件 ${fi.files[0].name}，头部 ${hdr.length}B；不发 0x87，不擦除） ==`);
+  if (await dfuIsDfu() === true) {
+    logTo('usbLog', '[仿真] 设备已在传输(DFU)阶段，跳过初始化与切换');
+  } else {
+    logTo('usbLog', '[仿真] === DFU 初始化 1/4 ~ 4/4 ===');
+    await send([0x0F | 0x80], '初始化 1/4 0x8F(GET_SN)', [0x0a, 0x02, 0x01], 2500); await sleep(200);
+    await send([0x0F | 0x80], '初始化 2/4 0x8F(GET_SN)', [0x0a, 0x02, 0x01], 2500); await sleep(200);
+    await send([0x0A | 0x80], '初始化 3/4 0x8A(GET_VERSION)', [0x04, 0x01], 2500); await sleep(200);
+    await send([0x05 | 0x80], '初始化 4/4 0x85(CHECK_IN_DFU)', [0x01, 0x02], 2500); await sleep(150);
+    logTo('usbLog', '[仿真] === 0x84 ENTER_DFU → 立刻(同连接)补发 0x8F「切换命令」===');
+    await send([0x04 | 0x80], '0x84 ENTER_DFU', [0x01, 0x02], 3000);
+    // ★ 关键时序：不等断链、不等重连，紧跟着在同一条连接上发 0x8F（抓包中与 0x84 应答相隔 59ms）
+    try { await w.writeValueWithoutResponse(dfuPack([0x0F | 0x80], 0)); logTo('usbLog', '>> [仿真] 切换命令 0x8F（同连接、不等应答，对齐抓包时序）'); }
+    catch (e) { logTo('usbLog', `[仿真] 切换命令 0x8F 写入异常（预期：设备此刻已停 BLE）：${e.message}`); }
+    if (!await dfuWaitReconnect()) throw new Error('切换后重连失败');
+  }
+  // dfuWaitReconnect 内部已做过一次 0x85 校验，这里再确认一次传输阶段
+  await send([0x05 | 0x80], '确认 OTA 传输阶段 0x85', [0x01, 0x02], 2500);
+  let pageSize = 0x1000;
+  { const r = await send([0x0C | 0x80], '发送 0x8C (DFU 就绪)', [0x05], 2500); if (r && r.length >= 3) pageSize = r[1] | (r[2] << 8); }
+  logTo('usbLog', `[仿真] 页大小=${pageSize}B（块 128B，共 ${Math.ceil((ab.byteLength - 96) / 128)} 块）`);
+  logTo('usbLog', '[仿真] === 头部已发送，等待设备确认（抓包中应答=02）===');
+  await sleep(300);
+  const ur = await send([0x01 | 0x80, ...hdr], '解锁帧 0x81 + 头96B（102B 整帧、无响应写）', [0x01, 0x02, 0x04, 0x0a], 6000);
+  let ur2 = null;
+  if (!ur) ur2 = await send([0x01 | 0x80, ...hdr], '解锁帧复测', [0x01, 0x02, 0x04, 0x0a], 6000);
+  const rep = ur || ur2, acked = !!rep;
+  const verdict = acked
+    ? `★★ 解锁被设备确认（应答=${bytesHex(rep)}）——抓包流程复现成功！至此协议闭环，接下来才是 0x87（擦除）+ 639 帧写块`
+    : '解锁仍无应答 ⇒ 先看日志里有无「丢弃错位应答」（expect 漏配）；再确认 0x85 是否回了 02（必须真的进了传输阶段）';
+  logTo('usbLog', `== 结论：${verdict} ==`);
+  if (out) out.textContent = `照抄小程序：${verdict}`;
+  return acked;
+}
+/* ---------- 帧长边界测试（只读命令，不擦除） ----------
+   23:48 应用模式实测：带填充的 0x8A 帧回的是 01=NG（说明设备**解析了**这些帧，只是按命令长度拒绝），
+   且从 19B 起连续无应答 ⇒ 应用模式接收上限约 18~20B，与沁恒 OTA profile 的 20B 写缓冲吻合。
+   但小程序是 639×128B（帧 134B）刷成功的 ⇒ **传输/DFU 模式的缓冲必然更大**，故本测试支持"先自动进 DFU 再测"。
+   每档复测 2 次、间隔 700ms、等待 2.5s，以区分"真边界"与"回包时序噪声"。 */
+/* ---------- 帧长边界测试（只读命令，不擦除） ----------
+   实测脉络：应用模式带填充的 0x8A 从 19B 起静默（回 01=按长度 NG）；而 **DFU 模式下 41B 仍有响应**
+   ⇒ "20B 写缓冲"只在应用模式成立，真正要测的是 DFU 模式的上限（我们的解锁帧是 102B）。
+   做法：粗扫（帧 7B→145B，失败即复测一次确认）+ 细扫（首个失败点前 14B 起，步长 2B，每档复测 2 次）。 */
+async function dfuFrameLimit() {
+  if (S.type !== 'ble') return toast('请先连接蓝牙设备');
+  const w = charOf('DFU_W'), n = charOf('DFU_N');
+  if (!w || !n) return toast('DFU 服务不可用');
+  const out = $('dfuReadProbeOut');
+  const modeName = async () => { try { const ci = await dfuRequest([0x05 | 0x80], [0x01, 0x02], 2500); return (ci[0] & 0x7f) === 2 ? 'DFU/OTA' : '应用'; } catch (e) { return '未知'; } };
+  let cur = await modeName();
+  logTo('usbLog', `== 帧长边界测试（粗扫+细扫）开始，当前模式=${cur} ==`);
+  if (cur !== 'DFU/OTA') {
+    const go = confirm('当前设备在**应用模式**。\n\n应用模式上限约 18~20B，但实测 **DFU 模式下 41B 仍有响应** ⇒ 决定"解锁帧能不能整帧发"的关键是 DFU 模式的上限。\n\n是否先自动进入 DFU 模式再测？\n（发送 0x84 ENTER_DFU，设备重启并自动重连，约 15 秒；不擦除固件）\n\n[确定]=先进 DFU　[取消]=就在应用模式测');
+    if (go) { const okd = await dfuEnterMode(); if (okd) cur = await modeName(); logTo('usbLog', `== 进入 DFU 后模式=${cur} ==`); }
+  }
+  await sleep(800);
+  const probe = async (len) => { // len=payload 长度，帧长=5+len
+    const payload = [0x0A | 0x80, ...new Array(len - 1).fill(0x00)];
+    try { const r = await dfuRequest(payload, undefined, 2200); return { ok: true, hex: bytesHex(r) }; }
+    catch (e) { return { ok: false, err: e.message }; }
+  };
+  // ===== 粗扫 =====
+  const coarse = [2, 6, 10, 16, 22, 28, 34, 36, 40, 48, 56, 64, 72, 80, 88, 96, 102, 110, 120, 130, 140];
+  let maxOk = 0, firstFail = 0;
+  logTo('usbLog', '[边界] === 粗扫：帧 7B → 145B ===');
+  for (const len of coarse) {
+    await sleep(600);
+    let a = await probe(len);
+    if (!a.ok) { await sleep(700); a = await probe(len); }   // 失败复测一次，抗时序噪声
+    logTo('usbLog', `[粗扫] 帧 ${5 + len}B（payload ${len}B）: ${a.ok ? '✓' + a.hex : '✗' + (a.err ? '（' + a.err + '）' : '')}`);
+    if (a.ok) maxOk = 5 + len;
+    else { firstFail = 5 + len; break; }
+  }
+  // ===== 细扫 =====
+  if (firstFail) {
+    const from = Math.max(6, firstFail - 14);
+    logTo('usbLog', `[边界] === 细扫：帧 ${from}B → ${firstFail + 2}B（步长 2B，每档复测 2 次）===`);
+    for (let f = from; f <= firstFail + 2; f += 2) {
+      const len = f - 5;
+      if (len < 2) continue;
+      const res = [];
+      for (let t = 0; t < 2; t++) { await sleep(700); const a = await probe(len); res.push(a.ok ? '✓' + a.hex : '✗'); }
+      const any = res.some(x => x[0] === '✓');
+      logTo('usbLog', `[细扫] 帧 ${f}B（payload ${len}B）×2: ${res.join(' / ')}`);
+      if (any && f > maxOk) maxOk = f;
+    }
+  }
+  let verdict;
+  if (!firstFail) verdict = `帧 7B→145B 全部有应答 ⇒ 该模式接收缓冲 ≥145B（"20B/帧长"假设排除；102B 解锁帧静默另有原因）`;
+  else if (maxOk >= 134) verdict = `最大有应答帧长 ${maxOk}B ≥134B（足够装下 128B 数据块 + 102B 解锁帧）⇒ 帧长不是解锁失败的原因，须查内容/状态`;
+  else if (maxOk >= 102) verdict = `最大有应答帧长 ${maxOk}B ⇒ 102B 解锁帧可以整帧发出（我们的做法没错），但 128B 数据块帧(${134}B)超出上限、必须分片`;
+  else verdict = `最大有应答帧长 ${maxOk}B（< 102B）⇒ 连解锁帧都发不出，必须拆成多条 ≤${maxOk}B 短帧（且设备需能跨写重组）`;
+  logTo('usbLog', `[边界] 结论（模式=${cur}）：${verdict}`);
+  if (out) out.textContent = `帧长边界（${cur}）：${verdict}`;
+}
+async function bleSnRead() {
+  if (S.type !== 'ble') return;
+  try {
+    const dv = await readDv('BLE_SN');
+    if (dv && dv.byteLength >= 1) {
+      const u8 = new Uint8Array(dv.buffer, dv.byteOffset, dv.byteLength);
+      const str = new TextDecoder().decode(u8);
+      // 固件读回有两种形态：ASCII 回显 "BLE_SN=1/0"（官方 V3.8 页面按此解析），或单字节 0x01/0x00
+      if (str.includes('BLE_SN=1') || (u8.length === 1 && u8[0] === 1)) S.snOn = true;
+      else if (str.includes('BLE_SN=0') || (u8.length === 1 && u8[0] === 0)) S.snOn = false;
+      else S.snOn = null; // 无法识别 → 显示"--"，不乱报
+    } else S.snOn = null;
+  } catch (e) { S.snOn = null; }
+  bleSnBadge();
+}
+function bleSnBadge() {
+  const el = $('bleSnBadge');
+  if (S.snOn === true) { el.textContent = '状态:显示中'; el.className = 'badge on'; }
+  else if (S.snOn === false) { el.textContent = '状态:不显示'; el.className = 'badge off'; }
+  else { el.textContent = '状态:--'; el.className = 'badge'; }
+}
+async function bleSnSet(on) {
+  if (S.type !== 'ble') return toast('请先连接蓝牙设备');
+  if (S.snLock) return toast('请稍候...');
+  S.snLock = true;
+  try {
+    await writeAscii('BLE_SN', on ? 'BLE_SN=1,' : 'BLE_SN=0,');
+    await sleep(400);
+    await bleSnRead(); // 读回实际状态（设备可能拒绝）
+    if (S.snOn === null) {
+      // 读回无法识别形态 → 信写入结果，提示以手机蓝牙列表实际名称为准
+      S.snOn = on; bleSnBadge();
+      toast(on ? 'SN显示已开启（设备未回读确认，以蓝牙列表名称为准）' : 'SN显示已关闭（设备未回读确认，以蓝牙列表名称为准）');
+    } else {
+      toast(S.snOn === on ? (on ? 'SN显示已开启' : 'SN显示已关闭') : '已发送，但设备状态未确认');
+    }
+  } catch (e) { toast('失败: ' + e.message); }
+  finally { S.snLock = false; }
+}
+async function batCapSet() {
+  if (S.type !== 'ble') return toast('请先连接蓝牙设备');
+  const cap = parseFloat($('batCap').value), volt = parseFloat($('batVolt').value);
+  if (isNaN(cap) || cap < 100 || cap > 50000) return toast('容量 100-50000 mAh');
+  if (isNaN(volt) || volt < 3 || volt > 30) return toast('电压 3-30 V');
+  const mwh = Math.round(cap * volt);
+  try {
+    await writeAscii('BATTERY_INFO', `BAT_CAP=${mwh},`);
+    toast(`电池容量已设为 ${mwh} mWh`);
+    await sleep(800); await batCapRead(true); // 读回确认
+  } catch (e) { toast('失败: ' + e.message); }
+}
+async function batCapRead(silent) {
+  if (S.type !== 'ble') return toast('请先连接蓝牙设备');
+  try {
+    const dv = await readDv('BATTERY_INFO');
+    if (!dv) { if (!silent) toast('读取失败：特征不可用'); return; }
+    const hex = Array.from(new Uint8Array(dv.buffer)).map(b => b.toString(16).padStart(2, '0')).join(' ');
+    logTo('usbLog', `[BAT_INFO 原始 ${dv.byteLength}B] ` + hex);
+    if (dv.byteLength >= 8) {
+      const bi = parseBatteryInfo(dv);
+      $('batCapCur').textContent = `当前容量:${bi.capacity} mWh` + (bi.capacity >= 1000 ? ` ≈ ${(bi.capacity / 3.6).toFixed(0)} mAh @3.6V / ${(bi.capacity / 4.2).toFixed(0)} mAh @4.2V` : '');
+      if (!silent) toast(`读取成功: ${bi.voltage}mV ${bi.current}mA ${bi.capacity}mWh，原始 hex 见日志`);
+    } else {
+      $('batCapCur').textContent = `返回 ${dv.byteLength} 字节（不足 8）:` + hex;
+      if (!silent) toast('数据长度异常，原始 hex 见日志');
+    }
+  } catch (e) { if (!silent) toast('读取失败: ' + e.message); }
+}
+
+/* ---------- 自然风曲线编辑器（BLE/USB 复用同一画布组件） ---------- */
+function makeCurveEditor(p) {
+  // p: {canvas, textarea, points, getN?, smooth, quiet, strong, min, max, randBtn}
+  const E = { data: Array(p.points).fill(50), sel: -1, drag: false, points: p.points };
+  E.draw = () => {
+    const c = p.canvas, ctx = c.getContext('2d'); const W = c.width, H = c.height;
+    ctx.clearRect(0, 0, W, H); ctx.strokeStyle = '#e3e6ea';
+    for (let y = 0; y <= 100; y += 25) { ctx.beginPath(); ctx.moveTo(0, H - y / 100 * H); ctx.lineTo(W, H - y / 100 * H); ctx.stroke(); }
+    ctx.strokeStyle = '#0984e3'; ctx.lineWidth = 2; ctx.beginPath();
+    E.data.forEach((v, i) => { const x = i / (E.points - 1) * W, y = H - v / 100 * (H - 8) - 4; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
+    ctx.stroke();
+    if (E.sel >= 0) { const x = E.sel / (E.points - 1) * W, y = H - E.data[E.sel] / 100 * (H - 8) - 4; ctx.fillStyle = '#ff6b6b'; ctx.beginPath(); ctx.arc(x, y, 5, 0, 7); ctx.fill(); }
+  };
+  E.sync = () => { p.textarea.value = E.data.join(','); E.draw(); };
+  E.pointFromEvent = ev => {
+    const c = p.canvas, r = c.getBoundingClientRect();
+    const x = (ev.touches ? ev.touches[0].clientX : ev.clientX) - r.left;
+    const y = (ev.touches ? ev.touches[0].clientY : ev.clientY) - r.top;
+    const i = Math.max(0, Math.min(E.points - 1, Math.round(x / r.width * (E.points - 1))));
+    const v = Math.max(0, Math.min(100, Math.round((1 - y / r.height) * 100)));
+    E.data[i] = v; E.sel = i; E.sync();
+  };
+  E.random = () => {
+    E.data = generateCurve({ smooth: $(p.smooth).checked, min: $(p.min).value, max: $(p.max).value });
+    if (E.data.length !== E.points) E.data = E.data.slice(0, E.points); while (E.data.length < E.points) E.data.push(E.data[E.data.length - 1] ?? 50);
+    E.sync();
+  };
+  E.resize = n => { n = Math.max(1, Math.min(32, n)); const nd = Array(n); for (let i = 0; i < n; i++) nd[i] = E.data[Math.min(E.data.length - 1, Math.round(i / (n - 1) * (E.data.length - 1)))] ?? 50; E.points = n; E.data = nd; E.sync(); };
+  // 拖拽绑定
+  p.canvas.addEventListener('mousedown', e => { E.drag = true; E.pointFromEvent(e); });
+  p.canvas.addEventListener('touchstart', e => { E.pointFromEvent(e); }, { passive: true });
+  p.canvas.addEventListener('touchmove', e => { e.preventDefault(); if (E.drag || e.touches.length) E.pointFromEvent(e); }, { passive: false });
+  return E;
+}
+const cv = makeCurveEditor({ canvas: $('cvCanvas'), textarea: $('cvData'), points: 128, smooth: 'cvSmooth', min: 'cvMin', max: 'cvMax' });
+cv.data = DEFAULT_NATURE_WIND_CURVE.slice(); cv.sync();
+const uv = makeCurveEditor({ canvas: $('uvCanvas'), textarea: $('uvVals'), points: 100, smooth: 'uvSmooth', min: 'uvMin', max: 'uvMax' });
+uv.data = Array(100).fill(40); uv.sync();
+async function cvApply() {
+  if (S.type !== 'ble') return toast('请先连接蓝牙设备');
+  if (cv.data.some(v => v < 0 || v > 100)) return toast('数据点需在 0-100');
+  try { await writeBytes('NATURE_WIND_CURVE', new Uint8Array(cv.data), true); toast('曲线已保存' + (S.ble.nwOn ? '' : '（开启自然风后生效）')); }
+  catch (e) { toast('失败: ' + e.message); }
+}
+async function cvRead() {
+  if (S.type !== 'ble') return toast('请先连接蓝牙设备');
+  try { const dv = await readDv('NATURE_WIND_CURVE'); const arr = []; for (let i = 0; i < 128 && i < dv.byteLength; i++) arr.push(dv.getUint8(i)); cv.data = arr; cv.sync(); toast('曲线读取成功'); }
+  catch (e) { toast('失败: ' + e.message); }
+}
+
+/* ---------- W96Pro 快充（BLE FFD0） ---------- */
+async function pdWriteChar(charKey, cmd) {
+  if (S.type !== 'ble') { toast('请先连接蓝牙设备'); return false; }
+  try { await writeAscii(charKey, cmd + ','); await sleep(500); await pdRefresh(false); return true; }
+  catch (e) { toast('失败: ' + e.message); return false; }
+}
+const BIT = { pow1a12v: 0x04, pow1cPd: 0x10, pow1dFcp: 0x80, pow1dAfc: 0x08, pow1dScp: 0x02 };
+async function pdToggle(name, bit, on, charKey, reg) {
+  const cur = S.pd[reg]; const val = on ? (cur & ~bit) : (cur | bit); // 官方逻辑: checked(使能)=0
+  if (await pdWriteChar(charKey, `${reg}=${val.toString(16).toUpperCase()}`)) { S.pd[reg] = val; toast('已执行'); }
+}
+const PD_SINK_PROTO = ['非快充', 'PD', '/', 'HV', 'AFC', 'FCP', 'SCP', 'PE1.1'];
+const PD_SRC_PROTO = ['非快充', 'PD', 'PPS', 'QC2.0', 'QC3.0', 'FCP', 'PE2.0/1.1', 'SFCP', 'AFC', 'SCP', 'LVDC1'];
+async function pdRefresh(showToast = true) {
+  if (S.type !== 'ble') { if (showToast) toast('请先连接蓝牙设备'); return; }
+  // FFD2（POWER_STATUS）：0-3 VBUS电压 / 4-5 VBUS电流 / 6 电路通断 / 7 充放 / 9 C口输入快充
+  try { const c = S.ble.chars.POWER_STATUS; if (c) {
+    const dv = new DataView((await c.readValue()).buffer);
+    const pi = parsePowerStatus(dv);
+    $('pdVv').textContent = formatVoltage(pi.vbusVoltage); $('pdVi').textContent = formatCurrent(pi.vbusCurrent);
+    $('pdPowc').textContent = dv.getUint8(6) === 1 ? '开启' : '关闭';
+    $('pdChg').textContent = dv.getUint8(7) === 1 ? '⚡充电中' : '🔋放电中';
+    $('pdCinBadge').textContent = dv.getUint8(9) === 0 ? '已打开' : '已关闭';
+  } } catch (e) { }
+  // FFD4（POWER_Q2）：1 版本 / 2 输入协议 / 3 输出协议 / 6 POW_1A / 7 POW_1C / 8 POW_1D
+  try { const c = S.ble.chars.POWER_Q2; if (c) {
+    const dv = new DataView((await c.readValue()).buffer);
+    S.pd.pow1a = dv.getUint8(6); S.pd.pow1c = dv.getUint8(7); S.pd.pow1d = dv.getUint8(8);
+    $('pdVer').textContent = dv.getUint8(1) === 0 ? 'PD2.0' : 'PD3.0';
+    $('pdSink').textContent = PD_SINK_PROTO[dv.getUint8(2)] || '未知';
+    $('pdSrc').textContent = PD_SRC_PROTO[dv.getUint8(3)] || '未知';
+  } } catch (e) { }
+  // FFD1（BATTERY_INFO）：电压 / 电流 / 容量
+  try { const c = S.ble.chars.BATTERY_INFO; if (c) {
+    const dv = new DataView((await c.readValue()).buffer); const bi = parseBatteryInfo(dv);
+    $('pdBv').textContent = formatVoltage(bi.voltage); $('pdBi').textContent = formatCurrent(bi.current);
+    $('pdBp').textContent = formatPower(bi.voltage / 1000 * bi.current / 1000);
+  } } catch (e) { }
+  const set = (id, on, t1, t2) => { const el = $(id); el.textContent = on ? t1 : t2; el.className = 'badge ' + (on ? 'on' : 'off'); };
+  set('pd12vBadge', (S.pd.pow1a & BIT.pow1a12v) === 0, '已打开', '已关闭');
+  set('pdSinkBadge', (S.pd.pow1c & BIT.pow1cPd) === 0, '已打开', '已关闭');
+  set('pdFcpBadge', (S.pd.pow1d & BIT.pow1dFcp) === 0, '已打开', '已关闭');
+  set('pdAfcBadge', (S.pd.pow1d & BIT.pow1dAfc) === 0, '已打开', '已关闭');
+  set('pdScpBadge', (S.pd.pow1d & BIT.pow1dScp) === 0, '已打开', '已关闭');
+  if (showToast) toast('快充配置已刷新');
+}
+async function pdResetDefault() {
+  if (S.type !== 'ble') return toast('请先连接蓝牙设备');
+  if (!confirm('确认恢复快充默认配置？\nPOW_C_IN=0 / POW_1A=0x1C / POW_1C=0 / POW_1D=0')) return;
+  await pdWriteChar('POWER_STATUS', 'POW_C_IN=0');
+  await pdWriteChar('POWER_Q2', 'POW_1A=1C');
+  await pdWriteChar('POWER_Q2', 'POW_1C=0');
+  await pdWriteChar('POWER_Q2', 'POW_1D=0');
+  toast('已恢复默认配置');
+}
+
+async function connectUsb() {
+  if (!navigator.usb) return toast('此浏览器不支持 WebUSB，请用 Chrome/Edge；Windows 老版请用「连接HID」');
+  try {
+    const device = await navigator.usb.requestDevice({ filters: USB_FILTERS });
+    await device.open(); await device.selectConfiguration(1);
+    let found = null;
+    for (const intf of device.configuration.interfaces) {
+      for (const alt of intf.alternates) {
+        // 优先 bulk，退化到 interrupt（HID 类接口都是 interrupt）
+        for (const t of ['bulk', 'interrupt']) {
+          const ins = alt.endpoints.filter(e => e.type === t && e.direction === 'in');
+          const outs = alt.endpoints.filter(e => e.type === t && e.direction === 'out');
+          if (ins.length && outs.length) { found = { intf, alt, inEp: ins[0], outEp: outs[0], type: t }; break; }
+        }
+        if (found) break;
+      }
+      if (found) break;
+    }
+    if (!found) { await device.close(); return toast('未找到可用的 in/out 端点（bulk/interrupt 均无）'); }
+    await device.claimInterface(found.intf.interfaceNumber); // 必须先 claim 再 selectAlternateInterface
+    await device.selectAlternateInterface(found.intf.interfaceNumber, found.alt.alternateSetting);
+    S.usb.device = device; S.usb.ifaceNo = found.intf.interfaceNumber; S.usb.inEp = found.inEp; S.usb.outEp = found.outEp;
+    S.usb.curGear = 0; S.lastTelemetryKey = null; // 重置滑轨档位与去重基准（新连接的遥测流）
+    S.type = 'usb'; setConnUI('usb');
+    logTo('usbLog', `== USB 已连接 (${found.type} 端点 ${found.outEp.endpointNumber}->${found.inEp.endpointNumber}) ==`);
+    toast(`USB 已连接 (${found.type} 端点 ${found.outEp.endpointNumber}->${found.inEp.endpointNumber})`);
+    usbReadLoop();
+  } catch (e) {
+    toast('连接失败: ' + e.message);
+    if (/protected/i.test(e.message)) logTo('usbLog', '提示: HID 属 WebUSB 受保护类，所有平台的 Chrome 都禁止声明——老版只能走「连接HID」（桌面 Chrome/Edge）。');
+    else if (/claim|denied|busy/i.test(e.message)) logTo('usbLog', '提示: 接口被系统驱动占用。请改用「连接HID」（桌面 Chrome/Edge）。');
+  }
+}
+/* ---------- HID（老版 W96D · WebHID，Windows 推荐，同官方电脑版 hidapi 通道） ---------- */
+async function connectHid() {
+  if (!navigator.hid) return toast('此浏览器不支持 WebHID：请用电脑版 Chrome/Edge，或（安卓）改用「连接USB」');
+  try {
+    // 先按已知 VID 过滤；为空则自动放宽为全部 HID 设备（安卓实验版枚举行为可能不同）
+    let devs = await navigator.hid.requestDevice({ filters: USB_FILTERS });
+    let widened = false;
+    if (!devs.length) { devs = await navigator.hid.requestDevice({ filters: [] }); widened = true; } // filters:[] = 列出全部 HID 设备
+    if (!devs.length) {
+      // 用户关掉了选择框，或 flag 未完全生效导致枚举为空
+      const all = await navigator.hid.getDevices().catch(() => []);
+      if (all.length) {
+        logTo('usbLog', '未勾选到新设备，但已授权列表里有：' + all.map(d => `${d.productName || '?'} ${hex4(d.vendorId)}:${hex4(d.productId)}`).join(' | '));
+        return toast('选择框为空但存在已授权设备，见日志');
+      }
+      return toast('安卓 WebHID 尚未完成（Chrome 157 前的实验版枚举层未通，任何 HID 设备都列不出）。老版请用电脑 Chrome；NEW 版走蓝牙');
+    }
+    if (widened) logTo('usbLog', '注意: 已知 VID 未命中，当前设备来自放宽列表：' + hex4(devs[0].vendorId) + ':' + hex4(devs[0].productId));
+    const dev = devs[0];
+    if (!dev.opened) await dev.open();
+    // 输出报告 ID：描述符若定义了 reportId 则使用之（等价 hidapi hid_write 的首字节 report id）
+    S.hid.reportId = 0;
+    for (const c of dev.collections) for (const r of (c.outputReports || [])) if (r.reportId) S.hid.reportId = r.reportId;
+    dev.addEventListener('inputreport', onHidInput);
+    dev.addEventListener('disconnect', () => { if (S.type === 'hid') { S.hid.device = null; S.hid.buf = ''; S.type = null; setConnUI(null); pwSamples = []; pwHistory = []; logTo('usbLog', '== HID 已拔出 =='); toast('HID 已拔出'); } });
+    S.hid.device = dev; S.hid.buf = ''; S.type = 'hid'; setConnUI('hid');
+    S.lastTelemetryKey = null;
+    logTo('usbLog', `== HID 已连接: ${dev.productName || 'W96D'} ${hex4(dev.vendorId)}:${hex4(dev.productId)}${S.hid.reportId ? ` (reportId ${S.hid.reportId})` : ''} ==`);
+    toast(`HID 已连接: ${dev.productName || 'W96D'} ${hex4(dev.vendorId)}:${hex4(dev.productId)}${S.hid.reportId ? ` (reportId ${S.hid.reportId})` : ''}`);
+  } catch (e) { toast('HID 连接失败: ' + e.message); }
+}
+function onHidInput(e) {
+  if (S.type !== 'hid') return;
+  S.hid.buf += new TextDecoder().decode(e.data, { stream: true });
+  let i; while ((i = S.hid.buf.indexOf('\n')) >= 0) { const line = S.hid.buf.slice(0, i).trim(); S.hid.buf = S.hid.buf.slice(i + 1); if (line) usbHandleLine(line); }
+  if (S.hid.buf.length > 4096) S.hid.buf = '';
+}
+async function usbSend(text) {
+  if (S.type !== 'usb' && S.type !== 'hid') return toast('请先连接 USB 设备');
+  const bytes = new TextEncoder().encode(text);
+  try {
+    if (S.type === 'hid') await S.hid.device.sendReport(S.hid.reportId, bytes);
+    else await S.usb.device.transferOut(S.usb.outEp.endpointNumber, bytes);
+    logTo('usbLog', '>> ' + text.replace(/\n/g, '') + '   [' + Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join(' ') + ']');
+  } catch (e) { toast('发送失败: ' + e.message); logTo('usbLog', '!! ' + e.message); }
+}
+function usbOldSend(cmd, val) { usbSend(`${cmd}=${val},`); }
+async function usbReadLoop() {
+  S.usb.reading = true; const dec = new TextDecoder(); let buf = '';
+  while (S.usb.reading && S.usb.device && S.usb.device.opened) {
+    try {
+      const res = await S.usb.device.transferIn(S.usb.inEp.endpointNumber, S.usb.inEp.packetSize || 64);
+      if (res.status === 'ok' && res.data && res.data.byteLength) {
+        buf += dec.decode(res.data, { stream: true });
+        let i; while ((i = buf.indexOf('\n')) >= 0) { const line = buf.slice(0, i).trim(); buf = buf.slice(i + 1); if (line) usbHandleLine(line); }
+        if (buf.length > 4096) buf = '';
+      }
+    } catch (e) {
+      // 读中断 = 设备拔出或端口错误：同步 UI 到断开态
+      if (S.type === 'usb') { S.usb.device = null; S.type = null; setConnUI(null); pwSamples = []; pwHistory = []; logTo('usbLog', '== USB 连接中断: ' + e.message + ' =='); toast('USB 已断开'); }
+      break;
+    }
+  }
+  S.usb.reading = false;
+}
+function usbHandleLine(line) {
+  // 遥测行去重：解析字段后与上一条完全一致（SN/Gear/Speed/VBus/VBat/IBat 全同）则不进日志，只更新仪表
+  // 实测格式（0x0716 批次）: ,SN=000123,Gear=0,Speed=0,VBus=5.0,VBat=4.2,IBat=0.00
+  // 兼容 JSON（其他批次/官方文档中的 vbus/vbat/ibat 小写字段）
+  let j;
+  try { j = JSON.parse(line); }
+  catch (e) {
+    j = {};
+    for (const part of line.split(',')) { const eq = part.indexOf('='); if (eq > 0) j[part.slice(0, eq).trim()] = part.slice(eq + 1).trim(); }
+  }
+  const key = JSON.stringify([j.SN ?? j.sn, j.Gear ?? j.gear, j.Speed ?? j.speed, j.Pwm ?? j.pwm, j.VBus ?? j.vbus, j.VBat ?? j.vbat, j.IBat ?? j.ibat]);
+  if (key === S.lastTelemetryKey) return; // 与上条重复：跳过日志（数值也相同，无需重复更新仪表）
+  S.lastTelemetryKey = key;
+  if ($('telLogToggle').checked) logTo('usbLog', '<< ' + line); // 遥测日志开关：关=遥测行不进日志（仪表照常更新）
+  pwFeed(j.VBat ?? j.vbat, j.IBat ?? j.ibat); // 电池功率峰值统计（100ms 原始流喂入，去重不影响：数值变化才到这里）
+  if (j.SN || j.sn) $('uSn').textContent = j.SN || j.sn;
+  const vbus = j.VBus ?? j.vbus, vbat = j.VBat ?? j.vbat, ibat = j.IBat ?? j.ibat;
+  if (vbus !== undefined) $('uVbus').textContent = numOrRaw(vbus) + ' V';
+  if (vbat !== undefined) $('uVbat').textContent = numOrRaw(vbat) + ' V';
+  if (ibat !== undefined) $('uIbat').textContent = numOrRaw(ibat) + ' A';
+  const gear = j.Gear ?? j.gear, spd = j.Speed ?? j.speed, pwm = j.Pwm ?? j.pwm;
+  if (gear !== undefined || spd !== undefined) $('uPwmGear').textContent = `${gear ?? '-'}档 / ${spd ?? '-'}` + (pwm !== undefined ? ` (${pwm}%)` : '');
+  if (gear !== undefined && gear !== '-') document.querySelectorAll('.uGearBtn').forEach(b => b.classList.toggle('btn-on', +b.dataset.gear === +gear));
+  // 遥测抓取各档 PWM：运行到第 n 档时，把该档 Speed 填入 GSETn 输入框（用户手改过的不覆盖）
+  const g = parseInt(gear), sp = parseFloat(spd);
+  if (g >= 1 && g <= 4 && !isNaN(sp) && sp > 0) { const el = $('gset' + g); if (el && !el.dataset.manual) el.value = sp; }
+  if (g >= 1 && g <= 4 && !isNaN(sp) && sp > 0) $('uPwmGear').textContent += ` · G${g} PWM=${sp}`;
+  // 滑轨同步：仅档位变化时同步位置（同档运行中不抢位置，避免与拖动打架）
+  if (g !== S.usb.curGear) {
+    S.usb.curGear = g;
+    const sl = $('uSpeed');
+    if (g >= 1 && g <= 4) {
+      sl.disabled = false;
+      sl.value = Math.min(100, Math.max(1, Math.round(sp) || parseInt($('gset' + g).value) || 50));
+      $('uGearPwmVal').textContent = `G${g} · ${sl.value}%`;
+    } else { sl.disabled = true; $('uGearPwmVal').textContent = '未运行'; }
+  }
+}
+function numOrRaw(v) { const n = parseFloat(v); return isNaN(n) ? String(v) : String(n); }
+/* 电池功率（峰值法）：滑动收集 5s 窗口内的 V×I 样本，每 5s 用窗口内最大 V 和最大 I（各自独立取窗内最大，保证乘积≥真实峰值）
+   显示用 4 窗滑动最大值平滑（20s 包络），避免单窗毛刺；窗口大小 5s：老版遥测 100ms/条=50 样本/窗，统计够稳，且响应不算迟钝 */
+const PW_WINDOW_MS = 5000, PW_HOLD_WINDOWS = 4;
+let pwSamples = [];            // 当前窗口 {p, v, i}
+let pwHistory = [];            // 最近 N 窗的峰值功率
+let pwLastShow = Date.now();
+function pwFeed(vbat, ibat) {
+  const now = Date.now();
+  const v = parseFloat(vbat), i = parseFloat(ibat);
+  if (isNaN(v) || isNaN(i)) return;
+  pwSamples.push({ p: v * Math.abs(i), v, i: Math.abs(i) });
+  if (now - pwLastShow < PW_WINDOW_MS) return;
+  pwLastShow = now;
+  if (pwSamples.length) {
+    const vmax = Math.max(...pwSamples.map(s => s.v)), imax = Math.max(...pwSamples.map(s => s.i));
+    pwHistory.push(vmax * imax); // W
+    if (pwHistory.length > PW_HOLD_WINDOWS) pwHistory.shift();
+  }
+  pwSamples = [];
+  const p = Math.max(...pwHistory);
+  $('uPower').textContent = p.toFixed(2) + ' W';
+}
+
+/* ---------- 事件绑定 ---------- */
+document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.tabs button').forEach(x => x.classList.remove('active'));
+  document.querySelectorAll('.tabpage').forEach(x => x.classList.remove('active'));
+  b.classList.add('active'); $(b.dataset.tab).classList.add('active');
+  if (b.dataset.tab === 'tabCurve') { cv.draw(); uv.draw(); }
+});
+$('btnConnectBle').onclick = connectBle;
+$('btnConnectUsb').onclick = connectUsb;
+$('btnConnectHid').onclick = connectHid;
+$('btnDisconnect').onclick = disconnect;
+$('blePowerOn').onclick = () => bleSetPower(true);
+$('blePowerOff').onclick = () => bleSetPower(false);
+document.querySelectorAll('.gearBtn').forEach(b => b.onclick = () => bleSetGear(+b.dataset.gear));
+$('bleSpeed').addEventListener('input', e => blePushSpeed(+e.target.value));
+$('bleSpeedApply').onclick = () => { const v = Math.max(0, Math.min(100, parseInt($('bleSpeedInput').value) || 0)); $('bleSpeed').value = v; blePushSpeed(v); };
+$('bleTurbo').onclick = bleToggleTurbo;
+$('bleNW').onclick = bleToggleNW;
+document.querySelectorAll('.lightBtn').forEach(b => b.onclick = () => bleSetLight(b.dataset.brightness));
+$('bleTurboTimeApply').onclick = bleSetTurboTime;
+$('bleTimerSet').onclick = () => bleSetTimer(parseInt($('bleTimerMin').value));
+$('bleTimerCancel').onclick = () => bleSetTimer(0);
+$('bleSleepApply').onclick = () => bleSetSleep(parseInt($('bleSleep').value));
+$('bleSleepNever').onclick = () => bleSetSleep(0);
+$('bleGearDownMode').onclick = bleToggleGearDown;
+$('bleCalibApply').onclick = bleApplyCalib;
+$('bleSnOn').onclick = () => bleSnSet(true);
+$('bleSnOff').onclick = () => bleSnSet(false);
+// 统一日志：开关控制显示/暂停刷新，清空按钮
+$('logToggle').addEventListener('change', () => {
+  $('usbLog').style.display = $('logToggle').checked ? '' : 'none';
+  if ($('logToggle').checked) renderLog(); // 打开时一次性渲染缓冲内的历史
+});
+$('logClear').onclick = usbLogClear;
+// 日志默认：显示日志开（窗口可见）、遥测日志关（100ms 遥测不刷屏，操作/事件照常记录）
+$('telLogToggle').checked = false;
+$('usbLog').style.display = '';
+$('batCapSet').onclick = batCapSet;
+$('batCapRead').onclick = () => batCapRead(false);
+/* PRO 实验(快充)已改为按设备名自动开关: 连接 W96P 显示标签页, 连接 W96D 自动隐藏, 无需手动开关 */
+$('cvRandom').onclick = () => { cv.random(); toast('已生成随机曲线'); };
+$('cvApply').onclick = cvApply;
+$('cvRead').onclick = cvRead;
+$('cvDefault').onclick = () => { cv.data = DEFAULT_NATURE_WIND_CURVE.slice(); cv.sync(); };
+$('cvData').addEventListener('change', () => { const arr = $('cvData').value.trim().split(/[,\s]+/).map(Number); if (arr.length === 128 && arr.every(v => v >= 0 && v <= 100)) { cv.data = arr; cv.draw(); } else toast('需 128 个 0-100 的数值'); });
+window.addEventListener('mousemove', e => { if (cv.drag) cv.pointFromEvent(e); if (uv.drag) uv.pointFromEvent(e); });
+window.addEventListener('mouseup', () => { cv.drag = false; uv.drag = false; });
+// 老版曲线编辑器
+$('uvRandom').onclick = () => { uv.random(); toast('已生成随机曲线'); };
+$('uvVals').addEventListener('change', () => { const arr = $('uvVals').value.trim().split(/[,\s]+/).map(Number); if (arr.length >= 1 && arr.length <= 200 && arr.every(v => v >= 0 && v <= 100)) { uv.points = arr.length; uv.data = arr; uv.draw(); } else toast('需 1-200 个 0-100 的数值'); });
+// 快充
+const pdBind = (id, fn) => $(id).onclick = async () => { if (S.type !== 'ble') return toast('请先连接蓝牙设备'); await fn(); };
+pdBind('pdCinOn', () => pdWriteChar('POWER_STATUS', 'POW_C_IN=1')); pdBind('pdCinOff', () => pdWriteChar('POWER_STATUS', 'POW_C_IN=0'));
+pdBind('pd12vOn', () => pdToggle('12v', BIT.pow1a12v, true, 'POWER_Q2', 'POW_1A')); pdBind('pd12vOff', () => pdToggle('12v', BIT.pow1a12v, false, 'POWER_Q2', 'POW_1A'));
+pdBind('pdSinkOn', () => pdToggle('sink', BIT.pow1cPd, true, 'POWER_Q2', 'POW_1C')); pdBind('pdSinkOff', () => pdToggle('sink', BIT.pow1cPd, false, 'POWER_Q2', 'POW_1C'));
+pdBind('pdFcpOn', () => pdToggle('fcp', BIT.pow1dFcp, true, 'POWER_Q2', 'POW_1D')); pdBind('pdFcpOff', () => pdToggle('fcp', BIT.pow1dFcp, false, 'POWER_Q2', 'POW_1D'));
+pdBind('pdAfcOn', () => pdToggle('afc', BIT.pow1dAfc, true, 'POWER_Q2', 'POW_1D')); pdBind('pdAfcOff', () => pdToggle('afc', BIT.pow1dAfc, false, 'POWER_Q2', 'POW_1D'));
+pdBind('pdScpOn', () => pdToggle('scp', BIT.pow1dScp, true, 'POWER_Q2', 'POW_1D')); pdBind('pdScpOff', () => pdToggle('scp', BIT.pow1dScp, false, 'POWER_Q2', 'POW_1D'));
+$('pdRefresh').onclick = () => pdRefresh();
+$('pdReset').onclick = pdResetDefault;
+$('dfuMimicTest').onclick = async () => {
+  if (S.busy) { logTo('usbLog', '!! 仿真测试未启动：正在执行其它操作'); return toast('操作进行中...'); }
+  if (S.type !== 'ble') { logTo('usbLog', '!! 仿真测试未启动：尚未连接蓝牙设备'); return toast('请先连接蓝牙设备'); }
+  S.busy = true; $('dfuMimicTest').disabled = true;
+  logTo('usbLog', '== 照抄小程序流程：按钮已点击 ==');
+  try { await dfuMimicUnlock(); } catch (e) { logTo('usbLog', '!! 仿真测试异常: ' + (e && e.message || e)); }
+  finally { S.busy = false; $('dfuMimicTest').disabled = false; }
+};
+$('dfuLimitProbe').onclick = async () => {
+  if (S.busy) { logTo('usbLog', '!! 帧长边界测试未启动：正在执行其它操作'); return toast('操作进行中...'); }
+  if (S.type !== 'ble') { logTo('usbLog', '!! 帧长边界测试未启动：尚未连接蓝牙设备'); return toast('请先连接蓝牙设备'); }
+  S.busy = true; $('dfuLimitProbe').disabled = true;
+  logTo('usbLog', '== 帧长边界测试：按钮已点击 ==');
+  try { await dfuFrameLimit(); } catch (e) { logTo('usbLog', '!! 帧长边界测试异常: ' + (e && e.message || e)); }
+  finally { S.busy = false; $('dfuLimitProbe').disabled = false; }
+};
+$('dfuReadProbe').onclick = async () => {
+  if (S.busy) { logTo('usbLog', '!! 读回测试未启动：正在执行其它操作'); return toast('操作进行中...'); }
+  if (S.type !== 'ble') { logTo('usbLog', '!! 读回测试未启动：尚未连接蓝牙设备'); return toast('请先连接蓝牙设备'); }
+  S.busy = true; $('dfuReadProbe').disabled = true;
+  logTo('usbLog', '== 读回测试：按钮已点击 ==');
+  try { await dfuReadProbe(); } catch (e) { logTo('usbLog', '!! 读回测试异常: ' + (e && e.message || e)); }
+  finally { S.busy = false; $('dfuReadProbe').disabled = false; }
+};
+/* ---------- OTA 固件升级（2026-09-25 按官方小程序成功刷机抓包实现） ----------
+   抓包实测时序（BT_HCI_*.cfa，见报告 §2.4.0）：
+     0x8F→SN ｜ 0x8A→04 0d ｜ 0x85→01(应用态) ｜ 0x84→02
+     0x8F「切换」必须紧跟 0x84 的应答（实测 59ms）、在**同一条连接**上发出 ⇒ 设备停 BLE，链路 5s 监督超时断开
+     重连（MTU 243→247）并重新订阅 FEE2 后：0x85→02、0x8C→05 00 10、0x81+头96B(102B 整帧)→02、0x87→02(约1.3s)
+     数据 639 帧（128B/帧、无逐块回执、帧间隔中位 18ms）→ 0x88→02 → 0x0B(无应答，复位)
+   不变量：key=0；全部无响应写（ATT WRITE_CMD）；每帧一条 ATT 写（传输阶段 MTU 247 足够）。
+   安全边界：**0x87 之前不发任何会写 flash 的命令**（解锁头 0x81 只校验，不擦除）。 */
+const OTA_CHUNK = 128;    // 抓包实测：pageSize 0x1000 ⇒ 每块 128B
+const OTA_PACE_MS = 18;   // 抓包实测帧间隔中位数（54.8 帧/秒）
+function otaUI(pct, text) {
+  if (pct !== undefined && pct !== null && !isNaN(pct)) { const f = $('otaBarFill'); if (f) f.style.width = Math.max(0, Math.min(100, pct)).toFixed(1) + '%'; }
+  if (text !== undefined) { const o = $('otaOut'); if (o) o.textContent = text; }
+}
+async function otaParseFile() {
+  const fi = $('otaFile');
+  if (!fi || !fi.files || !fi.files[0]) throw new Error('请先选择固件文件（.up）');
+  const u8 = new Uint8Array(await fi.files[0].arrayBuffer());
+  if (u8.length <= 96 + OTA_CHUNK) throw new Error(`文件太小（${u8.length}B），不是 .up 固件`);
+  const asc = (o, n) => { let s = ''; for (let i = o; i < o + n && u8[i]; i++) s += String.fromCharCode(u8[i]); return s; };
+  return { name: fi.files[0].name, size: u8.length, hdr: u8.slice(0, 96), body: u8.slice(96), model: asc(0x21, 12), ver: u8[0x4d] };
+}
+// 进入传输阶段：0x85 已 02 则跳过；否则 0x84 → 立刻(同连接) 0x8F → 等断链 → 重连 → 0x85 必须 02
+async function otaEnterTransferStage(log) {
+  const ci = await dfuRequest([0x05 | 0x80], [0x01, 0x02], 3000);
+  if ((ci[0] & 0x7f) === 2) { log('设备已在传输(DFU)阶段，跳过切换'); return; }
+  log('应用态确认（0x85→01），发送 0x84 ENTER_DFU');
+  await dfuRequest([0x04 | 0x80], [0x01, 0x02], 4000);
+  // ★ 关键时序：应答后立刻在同一条连接上发 0x8F（不等断链、不等重连、不等应答）
+  try { await charOf('DFU_W').writeValueWithoutResponse(dfuPack([0x0F | 0x80], 0)); log('已发切换命令 0x8F（同连接、不等应答，对齐抓包 59ms 时序）'); }
+  catch (e) { log('切换命令 0x8F 写入异常（预期：设备此刻已停 BLE）：' + (e && e.message || e)); }
+  log('等待设备断链（设备侧监督超时 5s）…');
+  if (!await dfuWaitReconnect()) throw new Error('切换后重连失败');
+  // dfuWaitReconnect 内部已发过一次 0x85 并把结果记在 S.ble.lastCheckIn（不再重复发一轮，减少握手往返）
+  let mode = S.ble.lastCheckIn;
+  for (let i = 0; i < 2 && mode !== 2; i++) {
+    log(`传输阶段确认无应答/非 02（${mode === null ? '无应答' : '0x' + Number(mode).toString(16)}），再确认一次…`);
+    try { const ci2 = await dfuRequest([0x05 | 0x80], [0x01, 0x02], 3000); mode = ci2[0] & 0x7f; } catch (e) { mode = null; }
+  }
+  if (mode !== 2) throw new Error(`切换未生效：0x85 ${mode === null ? '无应答' : '回 0x' + Number(mode).toString(16)}（应为 02）。未做任何擦除，可重试`);
+  log('传输阶段确认：0x85→02 ✅');
+}
+async function otaRun(dryRun) {
+  if (S.type !== 'ble') return toast('请先连接蓝牙设备');
+  if (!charOf('DFU_W') || !charOf('DFU_N')) return toast('DFU 服务不可用');
+  const fw = await otaParseFile();
+  const blocks = Math.ceil(fw.body.length / OTA_CHUNK);
+  const paceEl = $('otaPace');
+  const pace = Math.max(0, Math.min(200, parseInt(paceEl && paceEl.value, 10) || OTA_PACE_MS));
+  const log = m => logTo('usbLog', '[OTA] ' + m);
+  log(`== ${dryRun ? '干跑' : '升级'}开始：${fw.name}｜${fw.size}B（体 ${fw.body.length}B + 头 96B）｜型号 ${fw.model}｜固件 V${Math.floor(fw.ver / 10)}.${fw.ver % 10}｜${blocks} 块 × ${OTA_CHUNK}B ==`);
+  if (fw.model !== 'W96D001' && !confirm(`固件型号字段是 "${fw.model}"（预期 W96D001）。\n刷错型号可能让设备无法启动，仍要继续吗？`)) throw new Error('用户取消（型号不匹配）');
+  if (!dryRun && !confirm(`即将开始刷机：${fw.name}\n\n• 0x87 之后会擦除应用区，中途切勿断电/断开（预计约 ${Math.round(blocks * pace / 1000)}s）\n• 失败时设备仍停在 DFU 阶段，重新连接后可再刷\n\n确认开始？`)) throw new Error('用户取消');
+  otaUI(2, '① 读取设备 SN/版本…');
+  try { log('设备 SN = ' + bytesHex(await dfuRequest([0x0F | 0x80], [0x0a, 0x02, 0x01], 3000))); } catch (e) { log('读 SN 无应答（继续）'); }
+  let verBefore = null;
+  try { verBefore = await dfuRequest([0x0A | 0x80], [0x04], 3000); log('设备版本（刷机前）= ' + bytesHex(verBefore)); } catch (e) { log('读版本无应答（继续）'); }
+  otaUI(5, '② 进入传输阶段（0x84 → 立刻 0x8F → 等断链重连）…');
+  await otaEnterTransferStage(log);
+  otaUI(9, '③ 读页大小（0x8C）…');
+  let pageSize = 4096;
+  for (let i = 0; i < 2; i++) {
+    try { const r = await dfuRequest([0x0C | 0x80], [0x05], 3000); pageSize = r[1] | (r[2] << 8); log(`页大小 = ${pageSize}B`); break; }
+    catch (e) { if (i === 0) log('0x8C 无应答，重试一次…'); else log('0x8C 两次无应答，按 4096 继续'); }
+  }
+  if (dryRun) { otaUI(100, `🧪 干跑完成：已在传输阶段（页 ${pageSize}B），未发 0x81/0x87，未擦除任何内容。`); log('干跑结束（未擦除）'); return false; }
+  otaUI(11, '④ 下发文件头（0x81 + 96B）…');
+  let ur = null;
+  for (let i = 0; i < 2 && !ur; i++) {
+    if (i) log('文件头无应答，重试一次（0x81 只校验，不擦除）…');
+    try { const r = await dfuRequest([0x01 | 0x80, ...fw.hdr], [0x01, 0x02], 8000); if ((r[0] & 0x7f) === 2) ur = r; else ur = { bad: bytesHex(r) }; }
+    catch (e) { }
+  }
+  if (!ur || ur.bad) throw new Error(`文件头未被确认${ur && ur.bad ? '（应答 ' + ur.bad + '）' : '（两次无应答）'}——未擦除任何内容`);
+  log('文件头已确认（02）✅');
+  otaUI(13, '⑤ 0x87 开始接收（设备擦除中，约 1-2s）…');
+  const su = await dfuRequest([0x07 | 0x80], [0x01, 0x02], 12000);
+  if ((su[0] & 0x7f) !== 2) throw new Error(`0x87 未被确认（应答 ${bytesHex(su)}）`);
+  log(`设备已准备接收数据 ✅ 开始写块（${blocks} 块 × ${OTA_CHUNK}B，帧间隔 ${pace}ms）`);
+  const t0 = Date.now();
+  for (let i = 0; i < blocks; i++) {
+    const c = fw.body.slice(i * OTA_CHUNK, i * OTA_CHUNK + OTA_CHUNK);
+    const t = Date.now();
+    await charOf('DFU_W').writeValueWithoutResponse(dfuPack([0x02, ...c], 0));
+    const dt = Date.now() - t; if (dt < pace) await sleep(pace - dt);
+    if (i % 10 === 0 || i === blocks - 1) otaUI(13 + (i + 1) / blocks * 82, `⑥ 写块 ${i + 1}/${blocks}（${((i + 1) * OTA_CHUNK / 1024).toFixed(1)} / ${(fw.body.length / 1024).toFixed(1)} KB）`);
+    if (i > 0 && i % 100 === 0) { const el = (Date.now() - t0) / 1000; log(`进度 ${i + 1}/${blocks}｜已用 ${el.toFixed(1)}s｜预计总时长 ${(el / (i + 1) * blocks).toFixed(0)}s`); }
+  }
+  const secs = ((Date.now() - t0) / 1000).toFixed(1);
+  log(`全部 ${blocks} 块发送完毕（${fw.body.length}B，用时 ${secs}s，${(fw.body.length / 1024 / +secs).toFixed(1)} KB/s）`);
+  /* ⑦ 结束传输：设备要把最后几页写进 flash 并校验，可能比抓包里的 133ms 慢很多，
+     所以这里"长等待 + 最多 3 次重发 0x88"，并在彻底没应答时反过来问设备"你现在在哪一步"。 */
+  otaUI(96, '⑦ 结束传输（0x88，设备收尾中，最多等 60s）…');
+  let eu = null, rebooted = false;
+  for (let i = 0; i < 3 && !eu; i++) {
+    if (i) log(`0x88 第 ${i + 1} 次尝试（设备可能仍在写 flash / 校验）…`);
+    try { const r = await dfuRequest([0x08 | 0x80], [0x01, 0x02], 20000); if ((r[0] & 0x7f) === 2) eu = r; else log('0x88 应答异常：' + bytesHex(r)); }
+    catch (e) { if (S.type !== 'ble') { rebooted = true; break; } log('0x88 无应答（' + e.message + '）'); }
+  }
+  let verdict;
+  if (eu) {
+    log('0x88 已确认（02）✅ → 发送 0x0B 复位');
+    try { await charOf('DFU_W').writeValueWithoutResponse(dfuPack([0x0B], 0)); } catch (e) { log('0x0B 写入异常（通常无碍）：' + (e && e.message || e)); }
+    verdict = `✅ 升级完成：${blocks} 块 / ${fw.body.length}B / 用时 ${secs}s。设备正在重启，请等 5~10s 再重新连接。`;
+    otaUI(100, verdict); toast('升级完成，设备重启中…', 4000);
+  } else if (rebooted) {
+    verdict = `✅ 数据已全部发送（${blocks} 块 / ${fw.body.length}B），设备在 0x88 后自行断链重启 —— 这是升级完成的正常表现。请等 5~10s 重新连接确认版本。`;
+    otaUI(100, verdict); toast('设备已重启，请重新连接确认版本', 5000);
+  } else {
+    // 没确认到结束：直接问设备现在处于哪个阶段（01=应用态/02=传输态/无应答）
+    let mode = null;
+    try { const ci = await dfuRequest([0x05 | 0x80], [0x01, 0x02], 5000); mode = ci[0] & 0x7f; }
+    catch (e) { mode = (S.type !== 'ble') ? 'off' : null; }
+    if (mode === 1) {
+      verdict = '✅ 设备已回到应用模式（0x85→01）：固件已生效。';
+      otaUI(100, verdict); log(verdict);
+    } else {
+      try { await charOf('DFU_W').writeValueWithoutResponse(dfuPack([0x0B], 0)); log('已补发 0x0B 复位'); } catch (e) { }
+      verdict = mode === 2
+        ? `⚠ 数据已全部发送，但设备未确认结束（0x88 无应答）且仍停在传输阶段（0x85→02）⇒ 本次写入未被设备接受（很可能有块丢失）。请重新连接后再刷一次。`
+        : `⚠ 数据已全部发送，但 0x88 无应答、0x85 也拿不到应答（${mode === 'off' ? '链路已断' : '超时'}）⇒ 结果无法确认。请等 10s 后重新连接，看设备信息页的版本，或直接再刷一次。`;
+      otaUI(100, verdict); log(verdict); toast('升级结果未确认，请看日志', 5000);
+    }
+  }
+  // 回读版本：给"到底成没成"一个确定答案。
+  // 注意 RESET 之后设备要重启，链路会掉 —— 不能立刻读，要"能读就读、读不到就等重连"地轮询。
+  { const dev = S.ble.lastDevice || S.ble.device;
+    if (dev) {
+      let got = null;
+      for (let i = 0; i < 8 && !got; i++) {
+        if (S.type === 'ble') {
+          try { got = await dfuRequest([0x0A | 0x80], [0x04], 3000); }
+          catch (e) { log(`回读版本第 ${i + 1} 次无应答（设备可能正在重启）：${e && e.message || e}`); }
+        } else {
+          try { S.ble.services = {}; S.ble.chars = {}; await bleDiscover(dev); log('设备已重启回来，重连成功'); }
+          catch (e) { log(`等待设备重新出现（第 ${i + 1} 次）：${e && e.message || e}`); }
+        }
+        if (!got) await sleep(2500);
+      }
+      if (got) {
+        log('升级后设备版本 = ' + bytesHex(got));
+        const same = verBefore && bytesHex(got) === bytesHex(verBefore);
+        const tail = same ? '（与刷机前相同：本次是同版本重刷，版本号不会变，直接看设备功能是否正常即可）'
+                          : `（已由 ${verBefore ? bytesHex(verBefore) : '?'} 变为 ${bytesHex(got)}）`;
+        otaUI(100, `${verdict}\n🔎 设备已回来，当前版本 = ${bytesHex(got)} ${tail}`);
+        readDeviceInfo().catch(() => { });
+      }
+      else { otaUI(100, `${verdict}\n（回读版本超时：设备可能仍在重启，稍后点「连接蓝牙」再看设备信息页的版本）`); }
+    } }
+  return !!eu || rebooted;
+}
+$('otaStart').onclick = async () => {
+  if (S.busy) return toast('操作进行中...');
+  if (S.type !== 'ble') return toast('请先连接蓝牙设备');
+  S.busy = true; $('otaStart').disabled = $('otaDry').disabled = true;
+  logTo('usbLog', '== OTA：开始升级 ==');
+  try { await otaRun(false); }
+  catch (e) { const m = (e && e.message) || String(e); logTo('usbLog', '!! OTA 异常/中止: ' + m); otaUI(undefined, '❌ ' + m); toast('升级未完成：' + m, 4000); }
+  finally { S.busy = false; $('otaStart').disabled = $('otaDry').disabled = false; }
+};
+$('otaDry').onclick = async () => {
+  if (S.busy) return toast('操作进行中...');
+  if (S.type !== 'ble') return toast('请先连接蓝牙设备');
+  S.busy = true; $('otaStart').disabled = $('otaDry').disabled = true;
+  logTo('usbLog', '== OTA：干跑（不擦除） ==');
+  try { await otaRun(true); }
+  catch (e) { const m = (e && e.message) || String(e); logTo('usbLog', '!! 干跑异常/中止: ' + m); otaUI(undefined, '❌ ' + m); toast('干跑未完成：' + m, 4000); }
+  finally { S.busy = false; $('otaStart').disabled = $('otaDry').disabled = false; }
+};
+// USB
+document.querySelectorAll('.uGearBtn').forEach(b => b.onclick = () => usbSend('GEAR=' + (+b.dataset.gear) + ',')); // 直通语义：GEAR=n → 第n档，0=停止
+$('usbGsetApply').onclick = () => { for (let i = 1; i <= 4; i++) { const v = parseInt($('gset' + i).value); if (!isNaN(v)) usbOldSend('GSET' + i, v); } };
+let uSpeedTimer;
+$('uSpeed').addEventListener('input', e => {
+  const v = +e.target.value;
+  $('uGearPwmVal').textContent = v + '%';
+  clearTimeout(uSpeedTimer);
+  uSpeedTimer = setTimeout(() => { // 参照蓝牙转速滑轨：拖动防抖后实时写入当前档位
+    const g = S.usb.curGear;
+    if (S.type !== 'usb' && S.type !== 'hid') return;
+    if (g >= 1 && g <= 4) { usbOldSend('GSET' + g, v); $('gset' + g).value = v; }
+  }, 200);
+});
+for (let i = 1; i <= 4; i++) $('gset' + i).addEventListener('input', e => e.target.dataset.manual = '1');
+// 老版自然风曲线上传（官方抓包格式，画布编辑器同蓝牙版）
+$('uvClr').onclick = () => usbOldSend('WIND_CLR', 0);
+$('uvApply').onclick = async () => {
+  if (!(S.type === 'usb' || S.type === 'hid')) return toast('请先连接 USB 设备');
+  const vals = uv.data;
+  if (!vals.length || vals.length > 200) return toast('组数需 1-200');
+  if (vals.some(v => v < 0 || v > 100 || !Number.isFinite(v))) return toast('风量值需在 0-100');
+  const tim = parseInt($('uwTim').value);
+  if (isNaN(tim) || tim < 1 || tim > 3600) return toast('Time Cycle 1-3600 秒');
+  if (S.busy) return toast('操作进行中'); S.busy = true;
+  try {
+    const sum = Math.max(10, Math.min(200, Math.ceil(vals.length / 10) * 10)); // WIND_SUM = 点数向上取整到 10 的倍数（官方 pp=1 → 10）
+    usbSend(`WIND_SUM=${sum},`); await sleep(300);
+    usbSend(`WIND_TIM=${tim},`); await sleep(300);
+    for (let i = 0; i < vals.length; i++) { usbSend(`WIND_IDX=${i * 256 + Math.round(vals[i])},`); await sleep(120); }
+    await sleep(300);
+    usbSend('WIND_SAVE=0,');
+    toast(`曲线已上传：${vals.length} 组`);
+  } finally { S.busy = false; }
+};
+// 诊断
+function diagDump(title, obj) { logTo('usbLog', '=== ' + title + ' ===\n' + JSON.stringify(obj, null, 1)); }
+const hex4 = n => '0x' + n.toString(16).padStart(4, '0');
+$('diagHidAny').onclick = async () => {
+  try {
+    if (!navigator.hid) return toast('此浏览器无 WebHID');
+    const ds = await navigator.hid.requestDevice({ filters: [] }); if (!ds.length) return;
+    diagDump('HID: ' + (ds[0].productName || '(无名)'), ds.map(d => ({ productName: d.productName, vendorId: hex4(d.vendorId), productId: hex4(d.productId), collections: d.collections })));
+  } catch (e) { diagDump('HID', { error: e.message }); }
+};
+$('diagUsbAny').onclick = async () => {
+  try {
+    if (!navigator.usb) return toast('此浏览器无 WebUSB');
+    const d = await navigator.usb.requestDevice({ filters: [] });
+    diagDump('USB: ' + (d.productName || '(无名)'), { vendorId: hex4(d.vendorId), productId: hex4(d.productId), interfaces: d.configuration && d.configuration.interfaces.map(i => ({ interface: i.interfaceNumber, alternates: i.alternates.map(a => ({ class: a.interfaceClass, endpoints: a.endpoints.map(e => e.direction + ' ' + e.type + ' #' + e.endpointNumber) })) })) });
+  } catch (e) { diagDump('USB', { error: e.message }); }
+};
+$('diagList').onclick = async () => {
+  const u = navigator.usb ? await navigator.usb.getDevices() : [], h = navigator.hid ? await navigator.hid.getDevices() : [];
+  diagDump('已授权设备', { usb: u.map(d => (d.productName || '(无名)') + ' ' + hex4(d.vendorId) + ':' + hex4(d.productId)), hid: h.map(d => (d.productName || '(无名)') + ' ' + hex4(d.vendorId) + ':' + hex4(d.productId)) });
+};
+setConnUI(null); updModeBtns(); cv.sync(); uv.sync();
+</script>
+</body>
+</html>
