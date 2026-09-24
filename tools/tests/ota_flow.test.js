@@ -106,13 +106,9 @@ vm.runInContext(`
   if (!L.some(l => /设备版本 = 04 0d/.test(l))) fails.push('④b 0x8A 版本应答未被消费');
   if (!L.some(l => /设备 SN = 0a 7b 00 00 00/.test(l))) fails.push('④b 0x0F/0x8F SN 应答未被消费');
 
-  // ⑤ 干跑不擦除
-  const mark = W.length;
-  await vm.runInContext('otaRun(true)', ctx);
-  const after = vm.runInContext('globalThis.WRITES', ctx).slice(mark);
-  const bad = after.filter(w => w.cmd === 0x87 || w.cmd === 0x0b || (w.cmd === 0x81 && w.len === 97));
-  if (bad.length) fails.push('⑤ 干跑阶段仍发出了 0x81/0x87/0x0B');
-  console.log('干跑写入:', after.map(w => '0x' + w.cmd.toString(16)).join(' ') || '(无)');
+  // ⑤ 写入收尾：0x87 之后 0x0B 之前不允许再插别的（防流程错位）
+  const i87 = W.findIndex(w => w.cmd === 0x87), i0b2 = W.findIndex(w => w.cmd === 0x0b);
+  if (!(i87 >= 0 && i0b2 > i87)) fails.push('⑤ 0x87 / 0x0B 顺序异常');
   console.log('数据帧:', data.length, '｜总字节:', cat.length, '｜首/末帧长:', frames[0] + '/' + frames[frames.length - 1]);
   console.log('OTA 返回:', ok, '｜日志条数:', vm.runInContext('LOGS.length', ctx));
   console.log('\n' + (fails.length ? '✗ 失败项:\n  ' + fails.join('\n  ') : '✓ 全部断言通过'));

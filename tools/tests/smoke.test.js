@@ -28,7 +28,7 @@ console.log("关键函数:", missing.length? '❌ 缺失 '+missing.join(','): '�
 // OTA 已于 2026-09-25 按抓包流程重新加入：核心入口必须存在（旧版遗留的探测函数不应再有）
 const otaNeed=['otaRun','otaEnterTransferStage','otaParseFile','otaUI'];
 const otaMissing=otaNeed.filter(n=>{ try { return typeof vm.runInContext(n,ctx)!=='function'; } catch(e){ return true; } });
-const otaGone=['otaBind','otaHandshakeUnlock','dfuProbeFrame','enterOtaUi','exitOtaUi'];
+const otaGone=['otaBind','otaHandshakeUnlock','dfuProbeFrame','enterOtaUi','exitOtaUi','dfuMimicUnlock','dfuReadProbe','dfuFrameLimit'];
 const otaStill=otaGone.filter(n=>{ try { return typeof vm.runInContext(n,ctx)==='function'; } catch(e){ return false; } });
 console.log('OTA 函数:', (otaMissing.length? '❌ 缺 '+otaMissing.join(','): '✓ otaRun/otaEnterTransferStage/otaParseFile/otaUI 齐备') + (otaStill.length? '｜❌ 旧遗留: '+otaStill.join(','): ''));
 console.log('console.error 次数:', errs.length, errs.slice(0,2).join(' | '));

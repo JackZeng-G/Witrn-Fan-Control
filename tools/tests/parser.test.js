@@ -1,5 +1,5 @@
 // 解析器输出验收：对仓库里那份「官方小程序成功刷机」抓包跑一遍 tools/parse_hci_log.js，
-// 断言关键统计与应答，防止解析器改动后悄悄失真（§2.4.0 的时序表就是它产出的）。
+// 断言关键统计与应答，防止解析器改动后悄悄失真（技术文档第 5 节的时序表就是它产出的）。
 const path = require('path');
 const { execFileSync } = require('child_process');
 const ROOT = path.join(__dirname, '..', '..');
@@ -30,5 +30,5 @@ const want = [
 for (const [re, name] of want) if (!re.test(out)) fails.push(`缺少：${name}（${re}）`);
 console.log(`解析输出 ${out.split('\n').length} 行，断言 ${want.length} 项，通过 ${want.length - fails.length} 项`);
 fails.forEach(f => console.log('  ✗ ' + f));
-console.log('\n' + (fails.length ? '✗ 解析器输出与预期不符' : '✓ 解析器输出与 §2.4.0 时序表一致'));
+console.log('\n' + (fails.length ? '✗ 解析器输出与预期不符' : '✓ 解析器输出与 技术文档第 5 节 时序表一致'));
 process.exit(fails.length ? 1 : 0);

@@ -64,12 +64,12 @@ vm.runInContext(`
   vm.runInContext('LOGS.length=0; S.type="ble"; STAGE=true; ARMED=false;', ctx);
   let rA=null; try { rA = await vm.runInContext('otaRun(false)', ctx); } catch(e){ fails.push('A 抛出异常: '+e.message); }
   const LA = vm.runInContext('LOGS', ctx);
-  const vA = LA.filter(l=>/仍停在传输阶段|已回到应用模式|结果无法确认/.test(l)).slice(-1)[0] || '';
+  const vA = LA.filter(l=>/升级未完成|固件已生效|升级结果未确认/.test(l)).slice(-1)[0] || '';
   console.log('A 0x88 无应答 + 0x85→02');
   console.log('   判定:', vA.replace(/^\[OTA\] /,'').slice(0,80));
-  if (!/仍停在传输阶段/.test(vA)) fails.push('A 未给出"仍停在传输阶段"的判定');
+  if (!/升级未完成/.test(vA)) fails.push('A 未给出"升级未完成（设备仍在升级模式）"的判定');
   if (rA !== false) fails.push('A 返回值应为 false');
-  if (!LA.some(l=>/补发 0x0B 复位/.test(l))) fails.push('A 未补发 0x0B');
+  if (!LA.some(l=>/已补发复位指令/.test(l))) fails.push('A 未补发复位指令');
   const W = vm.runInContext('globalThis.WRITES', ctx);
   if (!W.some(w=>w.cmd===0x88||w.cmd===0x08)) fails.push('A 未发 0x88');
   const n88 = W.filter(w=>w.cmd===0x88).length;
@@ -80,10 +80,10 @@ vm.runInContext(`
   vm.runInContext('LOGS.length=0; S.type="ble"; STAGE=true;', ctx);
   let rB=null; try { rB = await vm.runInContext('otaRun(false)', ctx); } catch(e){ fails.push('B 抛出异常: '+e.message); }
   const LB = vm.runInContext('LOGS', ctx);
-  const vB = LB.filter(l=>/仍停在传输阶段|已回到应用模式|结果无法确认/.test(l)).slice(-1)[0] || '';
+  const vB = LB.filter(l=>/升级未完成|固件已生效|升级结果未确认/.test(l)).slice(-1)[0] || '';
   console.log('B 0x88 无应答 + 0x85→01');
   console.log('   判定:', vB.replace(/^\[OTA\] /,'').slice(0,80));
-  if (!/已回到应用模式/.test(vB)) fails.push('B 未给出"已回到应用模式"的判定');
+  if (!/固件已生效/.test(vB)) fails.push('B 未给出"设备已恢复正常运行/固件已生效"的判定');
 
   console.log('\n' + (fails.length ? '✗ 失败项:\n  ' + fails.join('\n  ') : '✓ 全部断言通过'));
   process.exit(fails.length ? 1 : 0);

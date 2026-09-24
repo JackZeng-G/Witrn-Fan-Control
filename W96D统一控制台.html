@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>W96D 统一控制台 · v20260925g</title>
+<title>W96D 统一控制台 · v20260925h</title>
 <style>
 :root{--bg:#f0f2f5;--card:#fff;--text:#1a1a2e;--muted:#666;--on:#00b894;--off:#ff6b6b;--pri:#0984e3;--warn:#fdcb6e;--border:#e3e6ea}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -322,50 +322,25 @@ textarea{width:100%;min-height:70px;border:1px solid var(--border);border-radius
 <div id="tabInfo" class="tabpage">
   <div class="note" id="infoBleOnly" style="display:none;margin-bottom:10px">本页两个功能（蓝牙名称显示 SN、电池容量设置）仅蓝牙连接的 NEW W96D / W96P 支持，老版 W96D 固件无对应命令。</div>
 
-  <div class="card">
-    <h3>🔬 DFU / OTA 诊断（安全：不发 0x87 擦除命令）</h3>
-    <div class="note" style="margin-bottom:8px">
-      <b>2026-09-25 已用官方小程序成功刷机的 HCI 抓包定论</b>：切换的关键是「<code>0x84 ENTER_DFU</code> 应答后<b>立刻在同一条连接上</b>补发 <code>0x8F</code>」——
-      此后设备停 BLE、链路约 5s 监督超时断开，重连（MTU 由 243 变 247）并<b>重新订阅 FEE2</b> 后，
-      <code>0x85→02</code>、<code>0x8C→05 00 10</code>、<code>0x81+头96B</code>（102B 整帧）会回 <code>02</code>。
-      下面的 <b>🔓 照抄小程序</b> 按钮已按此校准，跑到"解锁被确认"为止。<br>
-      另两个按钮（读回通路 / 帧长边界）是定论前的排查手段，结论均已确定（读回不可用；帧长不是原因），一般无需再跑。
-    </div>
-    <div class="row">
-      <input type="file" id="dfuProbeFile" accept=".up,application/octet-stream" style="font-size:.85rem">
-    </div>
-    <div class="note" style="margin-top:6px">选 `W96D_V13.up` 用于取头部 96 字节（解锁帧）；🔓 按钮必须选文件。</div>
-    <div class="row" style="margin-top:8px">
-      <button class="btn btn-pri" id="dfuMimicTest">🔓 照抄小程序：0x84→立刻0x8F→重连→解锁（不擦除）</button>
-      <button class="btn" id="dfuReadProbe">🔬 运行读回测试</button>
-      <button class="btn" id="dfuLimitProbe">📏 帧长边界测试（7→145B）</button>
-    </div>
-    <div id="dfuReadProbeOut" class="note" style="margin-top:8px"></div>
-  </div>
-
   <div class="card" id="otaCard">
-    <h3>⬆ 固件升级 OTA（NEW W96D / W96Pro）</h3>
-    <div class="note" style="margin-bottom:8px">
-      按<b>官方小程序成功刷机的抓包时序</b>实现：<code>0x84</code> 应答后<b>立刻在同一条连接上</b>发 <code>0x8F</code> 切换 → 等断链 → 重连并重新订阅 FEE2 →
-      <code>0x85→02</code> 确认 → <code>0x8C</code> 页大小 → <code>0x81+头96B</code> → <code>0x87</code>（<b>此步擦除应用区</b>）→ 639 帧写块（无逐块回执，约 18ms/帧）→ <code>0x88</code> → <code>0x0B</code> 复位。
-      <br><b style="color:var(--off)">风险提示</b>：<code>0x87</code> 之后应用区已被擦除，<b>中途不要断电、不要关页面</b>；若失败，设备仍停在 DFU 阶段，重新连接后再刷一次即可。
-      建议先点 <b>🧪 干跑</b> 走到"已进入传输阶段"（不擦除）确认通路。
-    </div>
+    <h3>⬆ 固件升级</h3>
     <div class="row">
       <input type="file" id="otaFile" accept=".up,application/octet-stream" style="font-size:.85rem">
-      <button class="btn btn-pri" id="otaStart">⬆ 开始升级</button>
-      <button class="btn" id="otaDry">🧪 干跑（不擦除）</button>
+      <button class="btn btn-pri" id="otaStart">开始升级</button>
     </div>
-    <div class="row" style="margin-top:6px;font-size:.85rem">
-      <label style="display:flex;align-items:center;gap:6px">帧间隔
+    <div class="row" style="margin-top:8px;font-size:.85rem">
+      <label style="display:flex;align-items:center;gap:6px">写入间隔
         <input type="number" id="otaPace" value="20" min="0" max="200" style="width:64px"> ms
-        <span class="note" style="margin:0">（抓包实测官方小程序≈18ms；若收尾 0x88 无应答，可放慢到 30~40ms 再刷一次）</span>
+        <span class="note" style="margin:0">默认 20 即可；若升级过程中断，可试着放大到 30~40</span>
       </label>
+    </div>
+    <div class="note" style="margin-top:8px;color:var(--off)">
+      ⚠ 升级中请保持供电与页面开启，不要断电或离开；中途失败可重新连接后再升一次。
     </div>
     <div style="height:9px;background:var(--border);border-radius:5px;overflow:hidden;margin-top:10px">
       <div id="otaBarFill" style="height:100%;width:0%;background:var(--pri);transition:width .12s"></div>
     </div>
-    <div id="otaOut" class="note" style="margin-top:6px">未开始。选择官方 <code>.up</code> 固件后点「开始升级」。</div>
+    <div id="otaOut" class="note" style="margin-top:6px">选择固件文件（<code>.up</code>）后点「开始升级」。</div>
   </div>
   <div class="card" id="infoSnCard">
     <h3>📛 蓝牙名称显示 SN</h3>
@@ -399,9 +374,9 @@ textarea{width:100%;min-height:70px;border:1px solid var(--border);border-radius
       <b>快充实验</b>：仅 W96Pro。蓝牙连接 W96P 后「⚡ PRO 实验」标签自动出现，连接 W96D 自动隐藏。有烧设备风险，慎用。<br>
       <b>通信日志</b>：页面底部统一日志窗口，所有连接方式的操作/遥测原始数据都记录在此。「显示日志」控制窗口显隐，「遥测日志」控制高频遥测是否记录。
       <b>安全</b>：电池切勿装反；输入电压勿超规格。<br>
-      <b>固件升级（OTA）</b>：<b>已内置</b>（设备信息页 → ⬆ 固件升级 OTA）。流程按官方小程序成功刷机的 HCI 抓包实现：<code>0x84</code> 应答后立刻在同一条连接上补发 <code>0x8F</code> → 等断链 → 重连并重新订阅 FEE2 → <code>0x85→02</code> → <code>0x8C</code> → <code>0x81+头96B</code> → <code>0x87</code>（此步擦除）→ 639 帧 → <code>0x88</code> → <code>0x0B</code> 复位。<b>先点「🧪 干跑」确认通路（不擦除）</b>；时序与证据见《逆向分析与统一工具方案.md》§2.4.0。<br>
-      <span style="opacity:.75">本工具为逆向研究产物，与官方无关；协议细节与硬件 ID 见项目文档。</span><br>
-      <span style="opacity:.75">版本标记：<b>v20260925g</b>（若与你手上的文件名/说明不一致，请 Ctrl+Shift+R 强刷）</span>
+      <b>固件升级</b>：设备信息页 → ⬆ 固件升级，选择 <code>.up</code> 固件后点「开始升级」。升级期间请保持供电、不要断电或关页面；若中断，重新连接后再升一次即可。协议与流程见项目文档。<br>
+      <span style="opacity:.75">本工具为逆向研究产物，与官方无关。</span><br>
+      <span style="opacity:.75">版本标记：<b>v20260925h</b>（若与你手上的文件名/说明不一致，请 Ctrl+Shift+R 强刷）</span>
     </div>
   </div>
   <div class="card">
@@ -851,88 +826,6 @@ async function readDeviceInfo() {
     if ((sp[0] & 0x7f) === 10 && sp.length >= 5) { $('infoSn').textContent = String(sp[1] | (sp[2] << 8) | (sp[3] << 16) | (sp[4] << 24)); } else $('infoSn').textContent = '解析失败';
   } catch (e) { $('infoSn').textContent = '读取失败'; }
 }
-/* ---------- DFU 应答通路测试（安全：只发查询/解锁帧，不发 0x87 擦除） ----------
-   动机：沁恒官方 OTA 的网页实现（sintrb/WCHOTA、ZHANGHengEE/WCH_BLE_OTA）都是
-   「写命令 → delay → readValue()」取结果，而 WCH 的 OTA 特征本身就是可读可写的。
-   本工具此前只监听 FEE2 通知 ⇒ 若 W96D 的应答走"读特征值"，在我们眼里就是"静默"。
-   本测试对每种命令同时观察【通知】与【读回】两条通路并对比。 */
-async function dfuReadCharHex(w) {
-  try {
-    const dv = await w.readValue();
-    const u8 = new Uint8Array(dv.buffer, dv.byteOffset, dv.byteLength);
-    return { ok: true, hex: bytesHex(u8), len: u8.length };
-  } catch (e) { return { ok: false, err: (e && e.message) || String(e) }; }
-}
-async function dfuWriteFrameOnce(frame, mode) {
-  const w = charOf('DFU_W');
-  if (mode === 'req') await w.writeValueWithResponse(frame); else await w.writeValueWithoutResponse(frame);
-}
-async function dfuReadProbe() {
-  if (S.type !== 'ble') return toast('请先连接蓝牙设备');
-  const w = charOf('DFU_W'), n = charOf('DFU_N');
-  if (!w || !n) return toast('DFU 服务不可用（请先连接风扇）');
-  const props = w.properties || {};
-  const out = $('dfuReadProbeOut');
-  logTo('usbLog', `== DFU 应答通路测试开始 ==`);
-  logTo('usbLog', `[通路] FEE1 属性: read=${!!props.read} write=${!!props.write} writeWithoutResponse=${!!props.writeWithoutResponse}｜FEE2 notify=${!!(n.properties||{}).notify}`);
-  const setOut = t => { if (out) out.textContent = t; };
-
-  // ① 纯读基线
-  const base = await dfuReadCharHex(w);
-  logTo('usbLog', `[通路] ① 基线读 FEE1: ${base.ok ? '读回=' + base.hex + `（${base.len}B）` : '不支持/失败：' + base.err}`);
-
-  // ② 小命令用已知会应答的 0x8A：同时看通知与读回
-  async function probe(payload, label, waitMs, mode) {
-    const rx = makeRx(), results = [];
-    const h = e => { if (!e.target.value) return; const u8 = new Uint8Array(e.target.value.buffer, e.target.value.byteOffset, e.target.value.byteLength); onDfuReceive(rx, u8, results, u8); };
-    n.addEventListener('characteristicvaluechanged', h);
-    let sendErr = null;
-    const frame = dfuPack(payload, 0);
-    try { await dfuWriteFrameOnce(frame, mode); } catch (e) { sendErr = (e && e.message) || String(e); }
-    const t0 = Date.now();
-    while (results.length === 0 && Date.now() - t0 < waitMs) await sleep(50);
-    n.removeEventListener('characteristicvaluechanged', h);
-    const notified = results.length ? bytesHex(results[0]) + `@${Date.now() - t0}ms` : '无';
-    const rd = await dfuReadCharHex(w);
-    logTo('usbLog', `[通路] ${label}｜帧 ${frame.length}B（${mode === 'req' ? '带响应写' : '无响应写'}）${sendErr ? ' 写失败=' + sendErr : ''}｜通知=${notified}｜读回=${rd.ok ? (rd.hex || '(空)') : '失败:' + rd.err}`);
-    return { notified, read: rd.ok ? rd.hex : null, results: results.slice() };
-  }
-  const r2 = await probe([0x0A | 0x80], '② 小命令 0x8A（已知会回 04 0d）', 2500, 'cmd');
-
-  // ③ 真解锁帧（若选了固件文件）
-  let hdr = null;
-  const fi = $('dfuProbeFile');
-  if (fi && fi.files && fi.files[0]) {
-    const ab = await fi.files[0].arrayBuffer();
-    hdr = new Uint8Array(ab).slice(0, 96);
-    logTo('usbLog', `[通路] ③ 使用文件 ${fi.files[0].name} 的头部 96B（体 ${ab.byteLength - 96}B）`);
-  } else {
-    hdr = new Uint8Array(96);
-    logTo('usbLog', '[通路] ③ 未选固件文件：用 96 个 0x00 作头部（仅测通路，内容可能不被设备接受）');
-  }
-  const r3 = await probe([0x01 | 0x80, ...hdr], '③ 解锁帧 0x81+头96B', 3000, 'req');
-  const r4 = await probe([0x01 | 0x80, ...hdr], '④ 解锁帧（无响应写复测）', 3000, 'cmd');
-
-  // ⑤ 再看一次基线，判断"读回是否随命令变化"
-  const after = await dfuReadCharHex(w);
-  logTo('usbLog', `[通路] ⑤ 收尾读 FEE1: ${after.ok ? '读回=' + (after.hex || '(空)') : '失败:' + after.err}`);
-
-  const norm = x => (x || '').replace(/\s/g, '');
-  const b0 = base.ok ? norm(base.hex) : '', a2 = norm(r2.read), a3 = norm(r3.read), a4 = norm(r4.read);
-  let verdict;
-  if (a3 && a3 !== b0 && a3 !== a2) verdict = '★解锁帧后读回值发生变化 ⇒ 设备很可能用 readValue 返回解锁应答（此前只等通知，漏掉了）';
-  else if (a2 && a2 !== b0) verdict = '★读回随命令变化（0x8A 之后 ≠ 基线）⇒ 应答可以经 readValue 读取';
-  else if (a3 || a4) verdict = '读回有内容，但与基线/小命令相同 ⇒ 可能只是静态寄存器值，不是应答';
-  else verdict = '读回始终与基线一致或为空 ⇒ 读回不是应答通路（回到"设备确实没解析该帧"的结论）';
-  setOut(`通知：0x8A=${r2.notified}；解锁帧=${r3.notified} / ${r4.notified}｜读回：0x8A=${r2.read ?? '—'}；解锁=${r3.read ?? '—'}｜结论：${verdict}`);
-  logTo('usbLog', `== 测试结论：${verdict} ==`);
-  if (r3.results.length) logTo('usbLog', `== 解锁帧通过通知收到：${bytesHex(r3.results[0])} ==`);
-}
-/* ---------- 帧长边界测试（只读命令，不擦除） ----------
-   假设来源：W96D 主控是沁恒 CH592F，其 DFU 服务 UUID 与沁恒官方 OTA profile 一致（0xFEE0/0xFEE1），
-   而该 profile 的写缓冲为 OTAProfileWriteBuf[IAP_LEN]，老版 IAP 里 IAP_LEN=20 ⇒ 若设备照搬，
-   则"每条 BLE 写入必须是一整帧且 ≤20B"，这能解释：小帧有回、102B 整帧被丢、20B 分片被逐片误解析。
-   做法：用只读命令 0x8A（应答固定 04 0d）加填充字节，帧长从 6B 逐字节加到 41B，找"从多少字节开始不再应答"。 */
 /* ---------- 进入 DFU/升级模式（仅诊断用：发 0x84，不擦除；设备重启后自动重连） ---------- */
 // 等设备主动断链 → 重连（校验 DFU 句柄）→ CHECK_IN 确认
 async function dfuWaitReconnect(devOverride) {
@@ -956,141 +849,7 @@ async function dfuWaitReconnect(devOverride) {
   catch (e) { logTo('usbLog', `[DFU] 重连后 CHECK_IN 无应答：${e.message}`); }
   return true;
 }
-async function dfuIsDfu() {
-  try { const ci = await dfuRequest([0x05 | 0x80], [0x01, 0x02], 2500); return (ci[0] & 0x7f) === 2; }
-  catch (e) { return null; } // null = 无应答（可能正在重启/未连上）
-}
-async function dfuEnterMode() {
-  const inDfu = await dfuIsDfu();
-  if (inDfu === true) { logTo('usbLog', '[DFU] 已在 DFU/升级模式'); return true; }
-  try { await dfuRequest([0x04 | 0x80], [0x01, 0x02], 3000); logTo('usbLog', '[DFU] 已发送 0x84 ENTER_DFU（02），设备将重启'); }
-  catch (e) { logTo('usbLog', `[DFU] 0x84 无应答（${e.message}），仍等待断链`); }
-  return dfuWaitReconnect('dfu');
-}
-/* ---------- 照抄微信小程序：DFU 初始化 → 0x84+0x8F 切换 → 0x85/0x8C → 解锁头（不发 0x87，不擦除） ----------
-   ★ 2026-09-25 依官方小程序成功刷机的 HCI 抓包逐字节校准（BT_HCI_*.cfa）：
-       75763  8F → SN(0a 7b 00 00 00)
-       75921  8F → SN              76067  8A → 04 0d
-       76213  85 → 01(应用态)      76360  84 → 02
-       76506  8F「切换命令」← 只比 0x84 的应答晚 59ms，**同一条连接**上发出，设备无应答并随即失联
-       81475  链路以 reason=0x08（5s 监督超时）断开（本机未发 HCI Disconnect）
-       82035  重连（同地址，不用重扫）→ MTU 应答 243→247 → 重订阅 FEE2（CCCD 0x13 ← 0100）
-       83737  85 → 02(传输阶段)     83823  8C → 05 00 10
-       83920  81+头96B（整帧 102B）→ **02**   84917  87 → 02
-   ⇒ ① 切换必须"**0x84 应答后立刻、在同一条旧连接上发 0x8F**"，不能等断链重连后再发：
-        我们此前就是等重连后才发，设备只把它当普通 SN 查询回 0a+SN，切换从未发生。
-     ② 解锁帧的应答是 **02**（裸 0x81 才回 01）——此前 expect 漏了 02，成功的解锁会被当"错位应答"丢掉。
-   本测试只走到"解锁被确认"为止（不发 0x87，故不会擦除）。 */
-async function dfuMimicUnlock() {
-  if (S.type !== 'ble') return toast('请先连接蓝牙设备');
-  const w = charOf('DFU_W'); if (!w) return toast('DFU 服务不可用');
-  const fi = $('dfuProbeFile');
-  if (!fi || !fi.files || !fi.files[0]) return toast('请先在上方选择固件文件（.up）以取得头部 96B');
-  const ab = await fi.files[0].arrayBuffer();
-  const hdr = new Uint8Array(ab).slice(0, 96);
-  const send = async (payload, label, expect, wait = 2500) => {
-    try { const r = await dfuRequest(payload, expect, wait); logTo('usbLog', `[仿真] ${label} → 应答=${bytesHex(r)}`); return r; }
-    catch (e) { logTo('usbLog', `[仿真] ${label} → 无应答（${e.message}）`); return null; }
-  };
-  const out = $('dfuReadProbeOut');
-  logTo('usbLog', `== 照抄小程序流程开始（固件 ${fi.files[0].name}，头部 ${hdr.length}B；不发 0x87，不擦除） ==`);
-  if (await dfuIsDfu() === true) {
-    logTo('usbLog', '[仿真] 设备已在传输(DFU)阶段，跳过初始化与切换');
-  } else {
-    logTo('usbLog', '[仿真] === DFU 初始化 1/4 ~ 4/4 ===');
-    await send([0x0F | 0x80], '初始化 1/4 0x8F(GET_SN)', [0x0a, 0x02, 0x01], 2500); await sleep(200);
-    await send([0x0F | 0x80], '初始化 2/4 0x8F(GET_SN)', [0x0a, 0x02, 0x01], 2500); await sleep(200);
-    await send([0x0A | 0x80], '初始化 3/4 0x8A(GET_VERSION)', [0x04, 0x01], 2500); await sleep(200);
-    await send([0x05 | 0x80], '初始化 4/4 0x85(CHECK_IN_DFU)', [0x01, 0x02], 2500); await sleep(150);
-    logTo('usbLog', '[仿真] === 0x84 ENTER_DFU → 立刻(同连接)补发 0x8F「切换命令」===');
-    await send([0x04 | 0x80], '0x84 ENTER_DFU', [0x01, 0x02], 3000);
-    // ★ 关键时序：不等断链、不等重连，紧跟着在同一条连接上发 0x8F（抓包中与 0x84 应答相隔 59ms）
-    try { await w.writeValueWithoutResponse(dfuPack([0x0F | 0x80], 0)); logTo('usbLog', '>> [仿真] 切换命令 0x8F（同连接、不等应答，对齐抓包时序）'); }
-    catch (e) { logTo('usbLog', `[仿真] 切换命令 0x8F 写入异常（预期：设备此刻已停 BLE）：${e.message}`); }
-    if (!await dfuWaitReconnect()) throw new Error('切换后重连失败');
-  }
-  // dfuWaitReconnect 内部已做过一次 0x85 校验，这里再确认一次传输阶段
-  await send([0x05 | 0x80], '确认 OTA 传输阶段 0x85', [0x01, 0x02], 2500);
-  let pageSize = 0x1000;
-  { const r = await send([0x0C | 0x80], '发送 0x8C (DFU 就绪)', [0x05], 2500); if (r && r.length >= 3) pageSize = r[1] | (r[2] << 8); }
-  logTo('usbLog', `[仿真] 页大小=${pageSize}B（块 128B，共 ${Math.ceil((ab.byteLength - 96) / 128)} 块）`);
-  logTo('usbLog', '[仿真] === 头部已发送，等待设备确认（抓包中应答=02）===');
-  await sleep(300);
-  const ur = await send([0x01 | 0x80, ...hdr], '解锁帧 0x81 + 头96B（102B 整帧、无响应写）', [0x01, 0x02, 0x04, 0x0a], 6000);
-  let ur2 = null;
-  if (!ur) ur2 = await send([0x01 | 0x80, ...hdr], '解锁帧复测', [0x01, 0x02, 0x04, 0x0a], 6000);
-  const rep = ur || ur2, acked = !!rep;
-  const verdict = acked
-    ? `★★ 解锁被设备确认（应答=${bytesHex(rep)}）——抓包流程复现成功！至此协议闭环，接下来才是 0x87（擦除）+ 639 帧写块`
-    : '解锁仍无应答 ⇒ 先看日志里有无「丢弃错位应答」（expect 漏配）；再确认 0x85 是否回了 02（必须真的进了传输阶段）';
-  logTo('usbLog', `== 结论：${verdict} ==`);
-  if (out) out.textContent = `照抄小程序：${verdict}`;
-  return acked;
-}
-/* ---------- 帧长边界测试（只读命令，不擦除） ----------
-   23:48 应用模式实测：带填充的 0x8A 帧回的是 01=NG（说明设备**解析了**这些帧，只是按命令长度拒绝），
-   且从 19B 起连续无应答 ⇒ 应用模式接收上限约 18~20B，与沁恒 OTA profile 的 20B 写缓冲吻合。
-   但小程序是 639×128B（帧 134B）刷成功的 ⇒ **传输/DFU 模式的缓冲必然更大**，故本测试支持"先自动进 DFU 再测"。
-   每档复测 2 次、间隔 700ms、等待 2.5s，以区分"真边界"与"回包时序噪声"。 */
-/* ---------- 帧长边界测试（只读命令，不擦除） ----------
-   实测脉络：应用模式带填充的 0x8A 从 19B 起静默（回 01=按长度 NG）；而 **DFU 模式下 41B 仍有响应**
-   ⇒ "20B 写缓冲"只在应用模式成立，真正要测的是 DFU 模式的上限（我们的解锁帧是 102B）。
-   做法：粗扫（帧 7B→145B，失败即复测一次确认）+ 细扫（首个失败点前 14B 起，步长 2B，每档复测 2 次）。 */
-async function dfuFrameLimit() {
-  if (S.type !== 'ble') return toast('请先连接蓝牙设备');
-  const w = charOf('DFU_W'), n = charOf('DFU_N');
-  if (!w || !n) return toast('DFU 服务不可用');
-  const out = $('dfuReadProbeOut');
-  const modeName = async () => { try { const ci = await dfuRequest([0x05 | 0x80], [0x01, 0x02], 2500); return (ci[0] & 0x7f) === 2 ? 'DFU/OTA' : '应用'; } catch (e) { return '未知'; } };
-  let cur = await modeName();
-  logTo('usbLog', `== 帧长边界测试（粗扫+细扫）开始，当前模式=${cur} ==`);
-  if (cur !== 'DFU/OTA') {
-    const go = confirm('当前设备在**应用模式**。\n\n应用模式上限约 18~20B，但实测 **DFU 模式下 41B 仍有响应** ⇒ 决定"解锁帧能不能整帧发"的关键是 DFU 模式的上限。\n\n是否先自动进入 DFU 模式再测？\n（发送 0x84 ENTER_DFU，设备重启并自动重连，约 15 秒；不擦除固件）\n\n[确定]=先进 DFU　[取消]=就在应用模式测');
-    if (go) { const okd = await dfuEnterMode(); if (okd) cur = await modeName(); logTo('usbLog', `== 进入 DFU 后模式=${cur} ==`); }
-  }
-  await sleep(800);
-  const probe = async (len) => { // len=payload 长度，帧长=5+len
-    const payload = [0x0A | 0x80, ...new Array(len - 1).fill(0x00)];
-    try { const r = await dfuRequest(payload, undefined, 2200); return { ok: true, hex: bytesHex(r) }; }
-    catch (e) { return { ok: false, err: e.message }; }
-  };
-  // ===== 粗扫 =====
-  const coarse = [2, 6, 10, 16, 22, 28, 34, 36, 40, 48, 56, 64, 72, 80, 88, 96, 102, 110, 120, 130, 140];
-  let maxOk = 0, firstFail = 0;
-  logTo('usbLog', '[边界] === 粗扫：帧 7B → 145B ===');
-  for (const len of coarse) {
-    await sleep(600);
-    let a = await probe(len);
-    if (!a.ok) { await sleep(700); a = await probe(len); }   // 失败复测一次，抗时序噪声
-    logTo('usbLog', `[粗扫] 帧 ${5 + len}B（payload ${len}B）: ${a.ok ? '✓' + a.hex : '✗' + (a.err ? '（' + a.err + '）' : '')}`);
-    if (a.ok) maxOk = 5 + len;
-    else { firstFail = 5 + len; break; }
-  }
-  // ===== 细扫 =====
-  if (firstFail) {
-    const from = Math.max(6, firstFail - 14);
-    logTo('usbLog', `[边界] === 细扫：帧 ${from}B → ${firstFail + 2}B（步长 2B，每档复测 2 次）===`);
-    for (let f = from; f <= firstFail + 2; f += 2) {
-      const len = f - 5;
-      if (len < 2) continue;
-      const res = [];
-      for (let t = 0; t < 2; t++) { await sleep(700); const a = await probe(len); res.push(a.ok ? '✓' + a.hex : '✗'); }
-      const any = res.some(x => x[0] === '✓');
-      logTo('usbLog', `[细扫] 帧 ${f}B（payload ${len}B）×2: ${res.join(' / ')}`);
-      if (any && f > maxOk) maxOk = f;
-    }
-  }
-  let verdict;
-  if (!firstFail) verdict = `帧 7B→145B 全部有应答 ⇒ 该模式接收缓冲 ≥145B（"20B/帧长"假设排除；102B 解锁帧静默另有原因）`;
-  else if (maxOk >= 134) verdict = `最大有应答帧长 ${maxOk}B ≥134B（足够装下 128B 数据块 + 102B 解锁帧）⇒ 帧长不是解锁失败的原因，须查内容/状态`;
-  else if (maxOk >= 102) verdict = `最大有应答帧长 ${maxOk}B ⇒ 102B 解锁帧可以整帧发出（我们的做法没错），但 128B 数据块帧(${134}B)超出上限`;
-  else verdict = `最大有应答帧长 ${maxOk}B（< 102B）⇒ 连解锁帧都发不出`;
-  // 2026-09-25 定论：官方小程序成功刷机时就是"单帧 102B / 单帧 134B"，帧长从来不是问题。
-  // 所以本探针只在"设备确实按长度拒绝"时有意义；测出上限偏低时，优先怀疑帧内容（CRC 表/载荷）而不是"必须分片"。
-  verdict += '【参考】抓包已证明官方小程序单帧发 102B/134B 均成功 ⇒ 本探针测出上限偏低时，先查帧内容（CRC 表版本、载荷），不要急于拆帧';
-  logTo('usbLog', `[边界] 结论（模式=${cur}）：${verdict}`);
-  if (out) out.textContent = `帧长边界（${cur}）：${verdict}`;
-}
+/* ---------- 设备信息页：蓝牙名称显示 SN / 电池容量 ---------- */
 async function bleSnRead() {
   if (S.type !== 'ble') return;
   try {
@@ -1159,6 +918,7 @@ async function batCapRead(silent) {
     }
   } catch (e) { if (!silent) toast('读取失败: ' + e.message); }
 }
+
 
 /* ---------- 自然风曲线编辑器（BLE/USB 复用同一画布组件） ---------- */
 function makeCurveEditor(p) {
@@ -1486,43 +1246,15 @@ pdBind('pdAfcOn', () => pdToggle('afc', BIT.pow1dAfc, true, 'POWER_Q2', 'POW_1D'
 pdBind('pdScpOn', () => pdToggle('scp', BIT.pow1dScp, true, 'POWER_Q2', 'POW_1D')); pdBind('pdScpOff', () => pdToggle('scp', BIT.pow1dScp, false, 'POWER_Q2', 'POW_1D'));
 $('pdRefresh').onclick = () => pdRefresh();
 $('pdReset').onclick = pdResetDefault;
-$('dfuMimicTest').onclick = async () => {
-  if (S.busy) { logTo('usbLog', '!! 仿真测试未启动：正在执行其它操作'); return toast('操作进行中...'); }
-  if (S.type !== 'ble') { logTo('usbLog', '!! 仿真测试未启动：尚未连接蓝牙设备'); return toast('请先连接蓝牙设备'); }
-  S.busy = true; $('dfuMimicTest').disabled = true;
-  logTo('usbLog', '== 照抄小程序流程：按钮已点击 ==');
-  try { await dfuMimicUnlock(); } catch (e) { logTo('usbLog', '!! 仿真测试异常: ' + (e && e.message || e)); }
-  finally { S.busy = false; $('dfuMimicTest').disabled = false; }
-};
-$('dfuLimitProbe').onclick = async () => {
-  if (S.busy) { logTo('usbLog', '!! 帧长边界测试未启动：正在执行其它操作'); return toast('操作进行中...'); }
-  if (S.type !== 'ble') { logTo('usbLog', '!! 帧长边界测试未启动：尚未连接蓝牙设备'); return toast('请先连接蓝牙设备'); }
-  S.busy = true; $('dfuLimitProbe').disabled = true;
-  logTo('usbLog', '== 帧长边界测试：按钮已点击 ==');
-  try { await dfuFrameLimit(); } catch (e) { logTo('usbLog', '!! 帧长边界测试异常: ' + (e && e.message || e)); }
-  finally { S.busy = false; $('dfuLimitProbe').disabled = false; }
-};
-$('dfuReadProbe').onclick = async () => {
-  if (S.busy) { logTo('usbLog', '!! 读回测试未启动：正在执行其它操作'); return toast('操作进行中...'); }
-  if (S.type !== 'ble') { logTo('usbLog', '!! 读回测试未启动：尚未连接蓝牙设备'); return toast('请先连接蓝牙设备'); }
-  S.busy = true; $('dfuReadProbe').disabled = true;
-  logTo('usbLog', '== 读回测试：按钮已点击 ==');
-  try { await dfuReadProbe(); } catch (e) { logTo('usbLog', '!! 读回测试异常: ' + (e && e.message || e)); }
-  finally { S.busy = false; $('dfuReadProbe').disabled = false; }
-};
-/* ---------- OTA 固件升级（2026-09-25 按官方小程序成功刷机抓包实现） ----------
-   抓包实测时序（BT_HCI_*.cfa，见报告 §2.4.0）：
-     0x8F→SN ｜ 0x8A→04 0d ｜ 0x85→01(应用态) ｜ 0x84→02
-     0x8F「切换」必须紧跟 0x84 的应答（实测 59ms）、在**同一条连接**上发出 ⇒ 设备停 BLE，链路 5s 监督超时断开
-     重连（MTU 243→247）并重新订阅 FEE2 后：0x85→02、0x8C→05 00 10、0x81+头96B(102B 整帧)→02、0x87→02(约1.3s)
-     数据 639 帧（128B/帧、无逐块回执、帧间隔中位 18ms）→ 0x88→02 → 0x0B(无应答，复位)
-   不变量：key=0；全部无响应写（ATT WRITE_CMD）；每帧一条 ATT 写（传输阶段 MTU 247 足够）。
-   安全边界：**0x87 之前不发任何会写 flash 的命令**（解锁头 0x81 只校验，不擦除）。 */
-const OTA_CHUNK = 128;    // 抓包实测：pageSize 0x1000 ⇒ 每块 128B
-const OTA_PACE_MS = 18;   // 抓包实测帧间隔中位数（54.8 帧/秒）
-// 收尾（0x88 结束传输）参数：真机上设备写最后几页 flash + 校验可能远超抓包里的 133ms，
-// 所以默认「3 次 × 每次等 20s」。这两个值允许被 globalThis 覆盖，仅为让回归测试跑快些
-//（浏览器页面里没有任何地方会去设它们）。
+/* ---------- OTA 固件升级 ----------
+   协议与逐条时序见《W96D协议与技术文档.md》第 5 节；这里只记实现必须遵守的三条：
+     ① 0x8F「切换」必须在 0x84 的应答之后、**同一条连接上立刻**发出（等断链重连后再发就无效）；
+     ② 切换后设备会断开，必须重连并重新订阅 FEE2 才能继续；0x85 应答 02 才算进了升级模式；
+     ③ key=0、全部无响应写；0x87 之前不发任何会写 flash 的命令（解锁头只校验、不擦除）。 */
+const OTA_CHUNK = 128;    // 页 4096 ⇒ 每块 128B
+const OTA_PACE_MS = 18;   // 写入间隔默认值（与官方客户端实测节奏一致）
+// 收尾（结束指令）参数：设备写完最后几页并校验后才回应答，可能要等十几秒到几十秒，
+// 故默认「3 次 × 每次 20s」。这两个值允许被 globalThis 覆盖，只为让回归测试跑快些。
 const OTA_END_RETRIES = (typeof globalThis !== 'undefined' && Number.isInteger(globalThis.OTA_END_RETRIES) && globalThis.OTA_END_RETRIES > 0) ? globalThis.OTA_END_RETRIES : 3;
 const OTA_END_TIMEOUT = (typeof globalThis !== 'undefined' && Number.isFinite(globalThis.OTA_END_TIMEOUT) && globalThis.OTA_END_TIMEOUT > 0) ? globalThis.OTA_END_TIMEOUT : 20000;
 function otaUI(pct, text) {
@@ -1544,9 +1276,9 @@ async function otaEnterTransferStage(log) {
   log('应用态确认（0x85→01），发送 0x84 ENTER_DFU');
   await dfuRequest([0x04 | 0x80], [0x01, 0x02], 4000);
   // ★ 关键时序：应答后立刻在同一条连接上发 0x8F（不等断链、不等重连、不等应答）
-  try { await charOf('DFU_W').writeValueWithoutResponse(dfuPack([0x0F | 0x80], 0)); log('已发切换命令 0x8F（同连接、不等应答，对齐抓包 59ms 时序）'); }
+  try { await charOf('DFU_W').writeValueWithoutResponse(dfuPack([0x0F | 0x80], 0)); log('已发送切换命令，等待设备重启…'); }
   catch (e) { log('切换命令 0x8F 写入异常（预期：设备此刻已停 BLE）：' + (e && e.message || e)); }
-  log('等待设备断链（设备侧监督超时 5s）…');
+  log('等待设备断开（约 5 秒）…');
   if (!await dfuWaitReconnect()) throw new Error('切换后重连失败');
   // dfuWaitReconnect 内部已发过一次 0x85 并把结果记在 S.ble.lastCheckIn（不再重复发一轮，减少握手往返）
   let mode = S.ble.lastCheckIn;
@@ -1555,9 +1287,9 @@ async function otaEnterTransferStage(log) {
     try { const ci2 = await dfuRequest([0x05 | 0x80], [0x01, 0x02], 3000); mode = ci2[0] & 0x7f; } catch (e) { mode = null; }
   }
   if (mode !== 2) throw new Error(`切换未生效：0x85 ${mode === null ? '无应答' : '回 0x' + Number(mode).toString(16)}（应为 02）。未做任何擦除，可重试`);
-  log('传输阶段确认：0x85→02 ✅');
+  log('设备已进入升级模式 ✅');
 }
-async function otaRun(dryRun) {
+async function otaRun() {
   if (S.type !== 'ble') return toast('请先连接蓝牙设备');
   if (!charOf('DFU_W') || !charOf('DFU_N')) return toast('DFU 服务不可用');
   const fw = await otaParseFile();
@@ -1565,23 +1297,22 @@ async function otaRun(dryRun) {
   const paceEl = $('otaPace');
   const pace = Math.max(0, Math.min(200, parseInt(paceEl && paceEl.value, 10) || OTA_PACE_MS));
   const log = m => logTo('usbLog', '[OTA] ' + m);
-  log(`== ${dryRun ? '干跑' : '升级'}开始：${fw.name}｜${fw.size}B（体 ${fw.body.length}B + 头 96B）｜型号 ${fw.model}｜固件 V${Math.floor(fw.ver / 10)}.${fw.ver % 10}｜${blocks} 块 × ${OTA_CHUNK}B ==`);
+  log(`== 升级开始：${fw.name}｜${fw.size}B（体 ${fw.body.length}B + 头 96B）｜型号 ${fw.model}｜固件 V${Math.floor(fw.ver / 10)}.${fw.ver % 10}｜${blocks} 块 × ${OTA_CHUNK}B ==`);
   if (fw.model !== 'W96D001' && !confirm(`固件型号字段是 "${fw.model}"（预期 W96D001）。\n刷错型号可能让设备无法启动，仍要继续吗？`)) throw new Error('用户取消（型号不匹配）');
-  if (!dryRun && !confirm(`即将开始刷机：${fw.name}\n\n• 0x87 之后会擦除应用区，中途切勿断电/断开（预计约 ${Math.round(blocks * pace / 1000)}s）\n• 失败时设备仍停在 DFU 阶段，重新连接后可再刷\n\n确认开始？`)) throw new Error('用户取消');
-  otaUI(2, '① 读取设备 SN/版本…');
+  if (!confirm(`即将开始刷机：${fw.name}\n\n• 0x87 之后会擦除应用区，中途切勿断电/断开（预计约 ${Math.round(blocks * pace / 1000)}s）\n• 失败时设备仍停在 DFU 阶段，重新连接后可再刷\n\n确认开始？`)) throw new Error('用户取消');
+  otaUI(2, '① 读取设备信息…');
   try { log('设备 SN = ' + bytesHex(await dfuRequest([0x0F | 0x80], [0x0a, 0x02, 0x01], 3000))); } catch (e) { log('读 SN 无应答（继续）'); }
   let verBefore = null;
   try { verBefore = await dfuRequest([0x0A | 0x80], [0x04], 3000); log('设备版本（刷机前）= ' + bytesHex(verBefore)); } catch (e) { log('读版本无应答（继续）'); }
-  otaUI(5, '② 进入传输阶段（0x84 → 立刻 0x8F → 等断链重连）…');
+  otaUI(5, '② 让设备进入升级模式…');
   await otaEnterTransferStage(log);
-  otaUI(9, '③ 读页大小（0x8C）…');
+  otaUI(9, '③ 读取设备存储信息…');
   let pageSize = 4096;
   for (let i = 0; i < 2; i++) {
     try { const r = await dfuRequest([0x0C | 0x80], [0x05], 3000); pageSize = r[1] | (r[2] << 8); log(`页大小 = ${pageSize}B`); break; }
     catch (e) { if (i === 0) log('0x8C 无应答，重试一次…'); else log('0x8C 两次无应答，按 4096 继续'); }
   }
-  if (dryRun) { otaUI(100, `🧪 干跑完成：已在传输阶段（页 ${pageSize}B），未发 0x81/0x87，未擦除任何内容。`); log('干跑结束（未擦除）'); return false; }
-  otaUI(11, '④ 下发文件头（0x81 + 96B）…');
+  otaUI(11, '④ 校验固件…');
   let ur = null;
   for (let i = 0; i < 2 && !ur; i++) {
     if (i) log('文件头无应答，重试一次（0x81 只校验，不擦除）…');
@@ -1589,11 +1320,11 @@ async function otaRun(dryRun) {
     catch (e) { }
   }
   if (!ur || ur.bad) throw new Error(`文件头未被确认${ur && ur.bad ? '（应答 ' + ur.bad + '）' : '（两次无应答）'}——未擦除任何内容`);
-  log('文件头已确认（02）✅');
-  otaUI(13, '⑤ 0x87 开始接收（设备擦除中，约 1-2s）…');
+  log('固件信息已确认 ✅');
+  otaUI(13, '⑤ 擦除并准备写入（约 1-2 秒）…');
   const su = await dfuRequest([0x07 | 0x80], [0x01, 0x02], 12000);
   if ((su[0] & 0x7f) !== 2) throw new Error(`0x87 未被确认（应答 ${bytesHex(su)}）`);
-  log(`设备已准备接收数据 ✅ 开始写块（${blocks} 块 × ${OTA_CHUNK}B，帧间隔 ${pace}ms）`);
+  log(`设备已就绪，开始写入（${blocks} 块 × ${OTA_CHUNK}B，间隔 ${pace}ms）`);
   const t0 = Date.now();
   for (let i = 0; i < blocks; i++) {
     const c = fw.body.slice(i * OTA_CHUNK, i * OTA_CHUNK + OTA_CHUNK);
@@ -1605,37 +1336,36 @@ async function otaRun(dryRun) {
   }
   const secs = ((Date.now() - t0) / 1000).toFixed(1);
   log(`全部 ${blocks} 块发送完毕（${fw.body.length}B，用时 ${secs}s，${(fw.body.length / 1024 / +secs).toFixed(1)} KB/s）`);
-  /* ⑦ 结束传输：设备要把最后几页写进 flash 并校验，可能比抓包里的 133ms 慢很多，
-     所以这里"长等待 + 最多 3 次重发 0x88"，并在彻底没应答时反过来问设备"你现在在哪一步"。 */
-  otaUI(96, `⑦ 结束传输（0x88，设备收尾中，最多等 ${OTA_END_RETRIES * OTA_END_TIMEOUT / 1000}s）…`);
+  /* ⑦ 结束传输：设备写完最后几页并校验后才回应答，可能要等十几秒到几十秒 */
+  otaUI(96, `⑦ 等待设备写入完成（最多 ${OTA_END_RETRIES * OTA_END_TIMEOUT / 1000} 秒）…`);
   let eu = null, rebooted = false;
   for (let i = 0; i < OTA_END_RETRIES && !eu; i++) {
-    if (i) log(`0x88 第 ${i + 1} 次尝试（设备可能仍在写 flash / 校验）…`);
-    try { const r = await dfuRequest([0x08 | 0x80], [0x01, 0x02], OTA_END_TIMEOUT); if ((r[0] & 0x7f) === 2) eu = r; else log('0x88 应答异常：' + bytesHex(r)); }
-    catch (e) { if (S.type !== 'ble') { rebooted = true; break; } log('0x88 无应答（' + e.message + '）'); }
+    if (i) log(`结束指令第 ${i + 1} 次尝试（设备可能仍在写入）…`);
+    try { const r = await dfuRequest([0x08 | 0x80], [0x01, 0x02], OTA_END_TIMEOUT); if ((r[0] & 0x7f) === 2) eu = r; else log('结束指令应答异常：' + bytesHex(r)); }
+    catch (e) { if (S.type !== 'ble') { rebooted = true; break; } log('结束指令无应答（' + e.message + '）'); }
   }
   let verdict;
   if (eu) {
-    log('0x88 已确认（02）✅ → 发送 0x0B 复位');
-    try { await charOf('DFU_W').writeValueWithoutResponse(dfuPack([0x0B], 0)); } catch (e) { log('0x0B 写入异常（通常无碍）：' + (e && e.message || e)); }
-    verdict = `✅ 升级完成：${blocks} 块 / ${fw.body.length}B / 用时 ${secs}s。设备正在重启，请等 5~10s 再重新连接。`;
+    log('设备已确认写入完成 ✅ 正在重启…');
+    try { await charOf('DFU_W').writeValueWithoutResponse(dfuPack([0x0B], 0)); } catch (e) { log('复位指令写入异常（通常无碍）：' + (e && e.message || e)); }
+    verdict = `✅ 升级完成（${blocks} 块 / ${(fw.body.length / 1024).toFixed(0)} KB / 用时 ${secs}s）。设备正在重启，请等 5~10 秒后重新连接。`;
     otaUI(100, verdict); toast('升级完成，设备重启中…', 4000);
   } else if (rebooted) {
-    verdict = `✅ 数据已全部发送（${blocks} 块 / ${fw.body.length}B），设备在 0x88 后自行断链重启 —— 这是升级完成的正常表现。请等 5~10s 重新连接确认版本。`;
-    otaUI(100, verdict); toast('设备已重启，请重新连接确认版本', 5000);
+    verdict = `✅ 写入已全部发送（${blocks} 块 / ${(fw.body.length / 1024).toFixed(0)} KB），设备已自行重启 —— 通常表示升级完成。请等 5~10 秒后重新连接确认。`;
+    otaUI(100, verdict); toast('设备已重启，请重新连接确认', 5000);
   } else {
-    // 没确认到结束：直接问设备现在处于哪个阶段（01=应用态/02=传输态/无应答）
+    // 没确认到结束：问一下设备现在处于哪个阶段
     let mode = null;
     try { const ci = await dfuRequest([0x05 | 0x80], [0x01, 0x02], 5000); mode = ci[0] & 0x7f; }
     catch (e) { mode = (S.type !== 'ble') ? 'off' : null; }
     if (mode === 1) {
-      verdict = '✅ 设备已回到应用模式（0x85→01）：固件已生效。';
+      verdict = '✅ 设备已恢复正常运行：固件已生效。';
       otaUI(100, verdict); log(verdict);
     } else {
-      try { await charOf('DFU_W').writeValueWithoutResponse(dfuPack([0x0B], 0)); log('已补发 0x0B 复位'); } catch (e) { }
+      try { await charOf('DFU_W').writeValueWithoutResponse(dfuPack([0x0B], 0)); log('已补发复位指令'); } catch (e) { }
       verdict = mode === 2
-        ? `⚠ 数据已全部发送，但设备未确认结束（0x88 无应答）且仍停在传输阶段（0x85→02）⇒ 本次写入未被设备接受（很可能有块丢失）。请重新连接后再刷一次。`
-        : `⚠ 数据已全部发送，但 0x88 无应答、0x85 也拿不到应答（${mode === 'off' ? '链路已断' : '超时'}）⇒ 结果无法确认。请等 10s 后重新连接，看设备信息页的版本，或直接再刷一次。`;
+        ? `⚠ 升级未完成：设备仍停在升级模式，写入内容未被接受。请重新连接后再升一次；若重复失败，把「写入间隔」调到 30~40ms。`
+        : `⚠ 升级结果未确认（设备无应答${mode === 'off' ? '，链路已断开' : ''}）。请等 10 秒后重新连接，查看设备信息页的版本，或直接再升一次。`;
       otaUI(100, verdict); log(verdict); toast('升级结果未确认，请看日志', 5000);
     }
   }
@@ -1669,20 +1399,11 @@ async function otaRun(dryRun) {
 $('otaStart').onclick = async () => {
   if (S.busy) return toast('操作进行中...');
   if (S.type !== 'ble') return toast('请先连接蓝牙设备');
-  S.busy = true; $('otaStart').disabled = $('otaDry').disabled = true;
+  S.busy = true; $('otaStart').disabled = true;
   logTo('usbLog', '== OTA：开始升级 ==');
-  try { await otaRun(false); }
+  try { await otaRun(); }
   catch (e) { const m = (e && e.message) || String(e); logTo('usbLog', '!! OTA 异常/中止: ' + m); otaUI(undefined, '❌ ' + m); toast('升级未完成：' + m, 4000); }
-  finally { S.busy = false; $('otaStart').disabled = $('otaDry').disabled = false; }
-};
-$('otaDry').onclick = async () => {
-  if (S.busy) return toast('操作进行中...');
-  if (S.type !== 'ble') return toast('请先连接蓝牙设备');
-  S.busy = true; $('otaStart').disabled = $('otaDry').disabled = true;
-  logTo('usbLog', '== OTA：干跑（不擦除） ==');
-  try { await otaRun(true); }
-  catch (e) { const m = (e && e.message) || String(e); logTo('usbLog', '!! 干跑异常/中止: ' + m); otaUI(undefined, '❌ ' + m); toast('干跑未完成：' + m, 4000); }
-  finally { S.busy = false; $('otaStart').disabled = $('otaDry').disabled = false; }
+  finally { S.busy = false; $('otaStart').disabled = false; }
 };
 // USB
 document.querySelectorAll('.uGearBtn').forEach(b => b.onclick = () => usbSend('GEAR=' + (+b.dataset.gear) + ',')); // 直通语义：GEAR=n → 第n档，0=停止
