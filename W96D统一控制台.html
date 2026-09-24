@@ -6,77 +6,87 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>W96D 统一控制台 · v20260925o</title>
+<title>W96D 统一控制台 · v20260925p</title>
 <style>
-/* ============ W96D 控制台 · 视觉系统 v4 ============
+/* ============ W96D 控制台 · 视觉系统 v5 ============
    对象是**随身风扇**：电池供电、夏天随身、单手在手机上操作。
-   所以：清凉的浅蓝底 + 一个"风"主色；圆润好按（大圆角、药丸形档位、48px 触控）；
-   模块各自成卡（白面 + 表头分隔线 + 柔和阴影），页面不靠细线分区。
-   字体分工：界面文案无衬线；数字读数（电量/电压/版本/刻度）等宽。 */
+   · 形状：按钮=药丸，输入框/画布=圆角矩形，卡片=大圆角，表盘=正圆；同一层级只用一种形状。
+   · 色彩：薄荷绿=「风」，只给主操作与开关状态；暖橙只给 Turbo/快充；砖红只给停止/擦除。
+     文字对比度按 WCAG 4.5:1 校验过；--ink-3 只用于非文本（圆点/描边/禁用），不承载文字。
+   · 间距：4/8 节奏（--sp-*），不再出现 10/14/18 这类随手值。
+   · 字体：只用系统字体（离线可用、零第三方请求），读数用等宽 + tabular-nums。
+   · 深色跟随系统：token 名不变，另给一套值；主按钮在两种模式下都是「薄荷底 + 深墨字」。
+   ⚠ 改界面不要动元素 id 与 JS 依赖的 class：tools/tests/idcheck.test.js / smoke.test.js 会校验。 */
 :root{
-  --bg:#eff6f2;             /* 薄荷底：自然风的清凉，不是科技蓝 */
-  --surface:#ffffff;
-  --surface-2:#f4faf7;
-  --ink:#10222e;            /* 深蓝墨 */
-  --ink-2:#5b7285;
-  --ink-3:#90a6b4;
-  --rule:#d8e7e0;
-  --rule-2:#ecf4f0;
-  --flow:#1fa87f;           /* 风：薄荷绿（自然风） */
-  --flow-hi:#178364;
-  --flow-soft:#e3f5ee;
-  --flow-lo:#c9ebdf;
-  --charge:#e8a33d;         /* 充电/ Turbo：暖色，只有这两处用 */
-  --alert:#e2553f;          /* 停止/擦除 */
-  --radius:16px;            /* 消费电子的圆润 */
-  --radius-sm:10px;
+  /* —— 面与墨 —— */
+  --bg:#eff6f2; --surface:#ffffff; --surface-2:#f4faf7;
+  --ink:#10222e;            /* 正文 14.8:1 */
+  --ink-2:#5b7285;          /* 次要文字 4.6:1（对最浅底色也达标） */
+  --ink-3:#74899a;          /* 仅非文本：圆点/描边/禁用（3.3:1） */
+  --rule:#d8e7e0; --rule-2:#ecf4f0;
+  /* —— 风（薄荷）—— */
+  --flow:#1fa87f;           /* 填充：白底 3.0:1（图形元素下限） */
+  --flow-hi:#2fb98d;        /* 填充悬停：更亮一档，仍配深墨字 */
+  --flow-ink:#116e53;       /* 浅底上的绿字 5.4:1 */
+  --on-flow:#04241c;        /* 绿底上的字 5.5:1 */
+  --flow-soft:#e3f5ee; --flow-lo:#c9ebdf;
+  /* —— 状态 —— */
+  --charge:#e8a33d; --charge-ink:#96620f;   /* 暖橙：填充用前者，文字用后者 5.2:1 */
+  --alert:#c23a24;                          /* 停止/擦除 5.4:1 */
+  --on:var(--flow-ink); --off:var(--alert); /* JS 给电池功率上色用（充=绿 / 放=红） */
+  /* —— 形 —— */
+  --radius:16px; --radius-sm:12px; --radius-pill:999px;
+  --tap:48px; --tap-min:44px;
+  /* —— 间距：4/8 节奏 —— */
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px; --sp-8:32px;
   --shadow:0 2px 10px rgba(16,34,46,.06),0 1px 2px rgba(16,34,46,.04);
-  --tap:48px;
-  --sans:"Archivo","Helvetica Neue",Helvetica,Arial,system-ui,"PingFang SC","Microsoft YaHei",sans-serif;
-  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{-webkit-text-size-adjust:100%}
+::selection{background:var(--flow-lo);color:var(--ink)}
 body{font-family:var(--sans);background:
   radial-gradient(120% 60% at 50% -10%, #dcf3e8 0%, rgba(220,243,232,0) 60%), var(--bg);
-  color:var(--ink);font-size:15.5px;line-height:1.5;padding:0 16px 28px;max-width:880px;margin:0 auto}
-h1{font-size:1.25rem;font-weight:600;letter-spacing:-.01em}
+  color:var(--ink);font-size:16px;line-height:1.55;padding:0 var(--sp-4) var(--sp-6);max-width:880px;margin:0 auto}
+h1{font-size:1.3rem;font-weight:650;letter-spacing:-.01em}
 
 /* ---------- 页头 ---------- */
-.masthead{padding:20px 0 14px}
-.masthead .brand{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
-.masthead .model{font-size:.78rem;color:var(--ink-3)}
-#connBar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.masthead{padding:var(--sp-5) 0 var(--sp-3)}
+.masthead .brand{display:flex;align-items:baseline;gap:var(--sp-3);flex-wrap:wrap}
+.masthead .model{font-size:.8rem;color:var(--ink-2)}
+#connBar{display:flex;flex-wrap:wrap;gap:var(--sp-2);align-items:center}
 #connBar .state{font-size:.88rem;color:var(--ink-2);font-family:var(--mono)}
-#connDot{width:10px;height:10px;border-radius:50%;background:var(--ink-3);display:inline-block;box-shadow:0 0 0 4px rgba(144,166,180,.16)}
+#connDot{width:10px;height:10px;border-radius:50%;background:var(--ink-3);display:inline-block;box-shadow:0 0 0 4px rgba(116,137,154,.16)}
 #connDot.ble{background:var(--flow);box-shadow:0 0 0 4px rgba(31,168,127,.16)}
 #connDot.usb,#connDot.hid{background:#3d7fc4;box-shadow:0 0 0 4px rgba(61,127,196,.16)}
 
-/* ---------- 标签栏（药丸式，好按） ---------- */
-.tabs{display:flex;gap:8px;overflow-x:auto;margin:0 0 16px;scrollbar-width:none;padding-bottom:2px}
+/* ---------- 标签栏（药丸，44px 起，横向可滚） ---------- */
+.tabs{display:flex;gap:var(--sp-2);overflow-x:auto;margin:0 0 var(--sp-4);scrollbar-width:none;padding-bottom:2px}
 .tabs::-webkit-scrollbar{display:none}
-.tabs button{background:var(--surface);border:1px solid var(--rule);border-radius:999px;padding:9px 16px;
-  font:inherit;font-size:.92rem;color:var(--ink-2);cursor:pointer;white-space:nowrap;min-height:40px}
+.tabs button{display:inline-flex;align-items:center;background:var(--surface);border:1px solid var(--rule);
+  border-radius:var(--radius-pill);padding:0 var(--sp-4);min-height:var(--tap-min);
+  font:inherit;font-size:.92rem;color:var(--ink-2);cursor:pointer;white-space:nowrap}
 .tabs button:hover{color:var(--ink);border-color:var(--ink-3)}
-.tabs button.active{background:var(--flow);border-color:var(--flow);color:#fff;font-weight:600}
+.tabs button.active{background:var(--flow);border-color:var(--flow);color:var(--on-flow);font-weight:600}
 .tabs button:focus-visible{outline:2px solid var(--flow);outline-offset:2px}
 
 /* ---------- 模块卡 ---------- */
 .card{background:var(--surface);border:1px solid var(--rule);border-radius:var(--radius);
-  padding:16px 16px 18px;box-shadow:var(--shadow)}
-.card>h3{font-size:.98rem;font-weight:600;color:var(--ink);margin:0 0 14px;padding-bottom:10px;
+  padding:var(--sp-4) var(--sp-4) var(--sp-5);box-shadow:var(--shadow)}
+.card>h2{font-size:1rem;font-weight:650;color:var(--ink);margin:0 0 var(--sp-3);padding-bottom:var(--sp-2);
   border-bottom:1px solid var(--rule-2)}
 .tabpage{display:none}
 .tabpage.active{display:block}
-.modgrid{display:grid;gap:14px;grid-template-columns:1fr;align-items:start}
+.modgrid{display:grid;gap:var(--sp-4);grid-template-columns:1fr;align-items:start}
 @media (min-width:760px){ .modgrid{grid-template-columns:1fr 1fr} .modgrid>.span2{grid-column:1/-1} }
 
 /* ---------- 英雄区：今天的风量（圆形表盘，可转圈调风） ---------- */
-.hero{position:relative;overflow:hidden;gap:12px;
+.hero{position:relative;overflow:hidden;gap:var(--sp-3);
   background:linear-gradient(180deg,#f6fdf9 0%,var(--surface) 55%)}
 .hero::after{content:"";position:absolute;right:-40px;top:-60px;width:220px;height:220px;border-radius:50%;
   background:radial-gradient(circle,rgba(31,168,127,.10),rgba(31,168,127,0) 70%);pointer-events:none}
-.dialwrap{display:flex;flex-direction:column;align-items:center;gap:10px;position:relative;z-index:1;padding:2px 0 4px}
+.dialwrap{display:flex;flex-direction:column;align-items:center;gap:var(--sp-2);position:relative;z-index:1;padding:2px 0 var(--sp-1)}
 .dial{position:relative;width:204px;height:204px;border-radius:50%;touch-action:none;cursor:grab;
   background:radial-gradient(circle at 50% 34%,var(--surface),var(--surface-2));
   box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 2px 14px rgba(16,34,46,.08)}
@@ -87,8 +97,8 @@ h1{font-size:1.25rem;font-weight:600;letter-spacing:-.01em}
 .dial .track{stroke:var(--rule);stroke-dasharray:263.89 351.86}   /* 0.75×2πr, r=56 */
 .dial .arc{stroke:var(--flow);stroke-dasharray:0 351.86;transition:stroke-dasharray .18s linear}
 .dialval{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-  font-family:var(--mono);font-weight:600;font-size:2.9rem;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
-.dialval small{font-size:1.35rem;font-weight:500;margin-left:2px}
+  font-family:var(--mono);font-weight:600;font-size:3rem;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.dialval small{font-size:1.35rem;font-weight:500;margin-left:2px;color:var(--ink-2)}
 .vishide{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 /* 风：只有开机且有风量时才流动（响应状态，不是装饰） */
 .breeze{position:absolute;right:14px;top:18px;width:54px;height:34px;opacity:0;transition:opacity .3s;z-index:1}
@@ -98,106 +108,142 @@ h1{font-size:1.25rem;font-weight:600;letter-spacing:-.01em}
 .breeze i:nth-child(2){top:15px;width:52px;animation:bz 1.6s ease-in-out .25s infinite}
 .breeze i:nth-child(3){top:26px;width:26px;animation:bz 1.6s ease-in-out .5s infinite}
 @keyframes bz{0%,100%{transform:translateX(0);opacity:.25}50%{transform:translateX(6px);opacity:.6}}
+/* 宽屏：表盘在左、开关与档位在右，别把 204px 的表盘晾在一整行的中间 */
+@media (min-width:760px){
+  .hero{display:grid;grid-template-columns:auto 1fr;gap:var(--sp-4) var(--sp-6);align-items:center}
+  .hero>.note{grid-column:1/-1;margin-top:0}
+  .hero .controlbar{flex-direction:column;align-items:stretch;gap:var(--sp-3)}
+  .hero .controlbar>.row{justify-content:flex-start}
+  .hero .gearset{flex:0 0 auto;min-width:0;max-width:none}
+  .hero .controlbar>.row>.btn{flex:0 1 auto;min-width:104px}
+}
 
 /* ---------- 控件 ---------- */
-.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-.controlbar{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center}
-.gearset{display:flex;flex:1 1 260px;gap:8px;min-width:240px;max-width:480px}
-.gearset .btn{flex:1;min-width:58px;border-radius:999px}
+.row{display:flex;flex-wrap:wrap;gap:var(--sp-2);align-items:center}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-3)}
+.grid2.split{column-gap:var(--sp-8);position:relative}
+.grid2.split::before{content:"";position:absolute;left:50%;top:2px;bottom:2px;width:1px;background:var(--rule);pointer-events:none}
+.controlbar{display:flex;flex-wrap:wrap;gap:var(--sp-3) var(--sp-4);align-items:center}
+.gearset{display:flex;flex:1 1 260px;gap:var(--sp-2);min-width:240px;max-width:480px}
+.gearset .btn{flex:1;min-width:58px}
 @media (max-width:520px){.gearset{flex-basis:100%;max-width:none}}
-.btn{border:1px solid var(--rule);background:var(--surface);color:var(--ink);border-radius:var(--radius-sm);
-  padding:11px 16px;min-height:var(--tap);font:inherit;font-size:.95rem;cursor:pointer;
+/* 按钮统一药丸形：单手好按、和圆润的表盘同一套语言 */
+.btn{display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--rule);
+  background:var(--surface);color:var(--ink);border-radius:var(--radius-pill);padding:0 var(--sp-4);
+  min-height:var(--tap);font:inherit;font-size:.95rem;cursor:pointer;
   transition:background .15s,border-color .15s,color .15s,transform .08s}
 .btn:hover{border-color:var(--ink-3);background:var(--surface-2)}
 .btn:active{transform:translateY(1px)}
 .btn:focus-visible{outline:2px solid var(--flow);outline-offset:2px}
 .btn:disabled{opacity:.45;cursor:not-allowed}
-.btn-pri{background:var(--flow);border-color:var(--flow);color:#fff;border-radius:999px;font-weight:600}
-.btn-pri:hover{background:var(--flow-hi);border-color:var(--flow-hi);color:#fff}
-.btn-on{background:var(--flow);border-color:var(--flow);color:#fff;border-radius:999px;font-weight:600}
-.btn-on:hover{background:var(--flow-hi);border-color:var(--flow-hi)}
-/* 停止/关机：安静但可识别 */
-.btn-off{background:var(--surface);border-color:var(--rule);color:var(--alert)}
-.btn-off:hover{background:#fdf1ee;border-color:#f0c3b9}
-.btn-warn{background:var(--surface);border-color:var(--rule);color:var(--charge)}
-.btn-warn:hover{background:#fdf7ec;border-color:#ecd3a6}
-.btn-tiny{padding:8px 12px;min-height:38px;font-size:.88rem;border-radius:999px}
+.btn-pri,.btn-on{background:var(--flow);border-color:var(--flow);color:var(--on-flow);font-weight:600}
+.btn-pri:hover,.btn-on:hover{background:var(--flow-hi);border-color:var(--flow-hi);color:var(--on-flow)}
+/* 停止/关机：安静但可识别（砖红文字，不是一大块红） */
+.btn-off{color:var(--alert)}
+.btn-off:hover{background:#fdf1ee;border-color:#eab9af}
+.btn-warn{color:var(--charge-ink)}
+.btn-warn:hover{background:#fdf7ec;border-color:#e6cd9d}
+.btn-tiny{padding:0 var(--sp-3);min-height:var(--tap-min);font-size:.88rem}
 label{color:var(--ink-2);font-size:.9rem}
-input[type=number],input[type=text]{border:1px solid var(--rule);border-radius:var(--radius-sm);padding:9px;
-  width:104px;font:inherit;font-family:var(--mono);font-size:.95rem;background:var(--surface);color:var(--ink)}
+/* 字段：<label class="fld">文字<input>单位</label> —— 换行时文字与输入框不会被拆散，
+   读屏也能把标签念给输入框（原来 label 与 input 是分开的兄弟节点，没有关联） */
+.fld{display:inline-flex;align-items:center;gap:var(--sp-2);color:var(--ink-2);font-size:.9rem}
+.fld input[type=number]{width:88px}
+input[type=number],input[type=text]{border:1px solid var(--rule);border-radius:var(--radius-sm);padding:0 var(--sp-3);
+  min-height:var(--tap-min);width:104px;font:inherit;font-family:var(--mono);font-size:.95rem;background:var(--surface);color:var(--ink)}
 input[type=number]:focus,input[type=text]:focus{outline:2px solid var(--flow);outline-offset:-1px;border-color:var(--flow)}
 /* 滑轨：自己画，保证和配色一致（原生控件在大高度下会画成深色） */
 input[type=range]{-webkit-appearance:none;appearance:none;background:transparent;width:100%;height:44px;margin:2px 0}
-input[type=range]::-webkit-slider-runnable-track{height:10px;border-radius:999px;background:var(--rule-2)}
-input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;
-  background:var(--flow);border:3px solid var(--surface);box-shadow:0 1px 4px rgba(16,34,46,.22);margin-top:-7px}
+input[type=range]::-webkit-slider-runnable-track{height:10px;border-radius:var(--radius-pill);background:var(--rule-2)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;
+  background:var(--flow);border:3px solid var(--surface);box-shadow:0 1px 4px rgba(16,34,46,.22);margin-top:-8px}
 input[type=range]:disabled::-webkit-slider-thumb{background:var(--ink-3)}
-input[type=range]::-moz-range-track{height:10px;border-radius:999px;background:var(--rule-2)}
-input[type=range]::-moz-range-thumb{width:24px;height:24px;border:3px solid var(--surface);border-radius:50%;background:var(--flow)}
-input[type=range]:focus-visible{outline:2px solid var(--flow);outline-offset:4px;border-radius:999px}
-input[type=checkbox]{accent-color:var(--flow);width:18px;height:18px}
-textarea{width:100%;min-height:64px;border:1px solid var(--rule);border-radius:var(--radius-sm);padding:10px;
-  font-family:var(--mono);font-size:.72rem;line-height:1.55;background:var(--surface-2);color:var(--ink-2)}
+input[type=range]::-moz-range-track{height:10px;border-radius:var(--radius-pill);background:var(--rule-2)}
+input[type=range]::-moz-range-thumb{width:26px;height:26px;border:3px solid var(--surface);border-radius:50%;background:var(--flow)}
+input[type=range]:focus-visible{outline:2px solid var(--flow);outline-offset:4px;border-radius:var(--radius-pill)}
+input[type=checkbox]{accent-color:var(--flow);width:20px;height:20px}
+textarea{width:100%;min-height:64px;border:1px solid var(--rule);border-radius:var(--radius-sm);padding:var(--sp-3);
+  font-family:var(--mono);font-size:.78rem;line-height:1.6;background:var(--surface-2);color:var(--ink-2)}
+/* 行内代码（命令名/ID/文件名）：给个淡淡的底，别和正文糊在一起 */
+code{font-family:var(--mono);font-size:.9em;background:var(--surface-2);border:1px solid var(--rule);
+  border-radius:6px;padding:1px 5px;color:var(--ink-2)}
+input[type=file]{font:inherit;font-size:.85rem;color:var(--ink-2);max-width:100%}
+input[type=file]::file-selector-button{font:inherit;font-size:.85rem;margin-right:var(--sp-3);padding:0 var(--sp-4);
+  min-height:var(--tap-min);border:1px solid var(--rule);border-radius:var(--radius-pill);
+  background:var(--surface);color:var(--ink);cursor:pointer}
+input[type=file]::file-selector-button:hover{background:var(--surface-2);border-color:var(--ink-3)}
 
 /* ---------- 读数 ---------- */
-.val{font-family:var(--mono);font-weight:600;font-size:1.05rem;color:var(--ink)}
-.kv{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:8px 0;border-bottom:1px solid var(--rule-2)}
+.val{font-family:var(--mono);font-weight:600;font-size:1.05rem;color:var(--ink);font-variant-numeric:tabular-nums}
+.kv{display:flex;justify-content:space-between;align-items:baseline;gap:var(--sp-3);padding:var(--sp-2) 0;border-bottom:1px solid var(--rule-2)}
 .kv:last-child{border-bottom:none}
 .kv .k{color:var(--ink-2);font-size:.9rem}
 .disp,.kv .disp{font-family:var(--mono);font-size:.95rem;font-variant-numeric:tabular-nums;text-align:right}
-.badge{display:inline-block;padding:4px 11px;border-radius:999px;font-size:.8rem;background:var(--surface-2);
-  color:var(--ink-2);font-family:var(--mono);border:1px solid var(--rule)}
-.badge.on{background:var(--flow-soft);color:var(--flow-hi);border-color:#c9e6f2}
-.badge.off{background:#fdf1ee;color:var(--alert);border-color:#f0cdc4}
-.switchrow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 0;
+.badge{display:inline-flex;align-items:center;padding:0 var(--sp-3);min-height:28px;border-radius:var(--radius-pill);
+  font-size:.8rem;background:var(--surface-2);color:var(--ink-2);font-family:var(--mono);border:1px solid var(--rule)}
+.badge.on{background:var(--flow-soft);color:var(--flow-ink);border-color:var(--flow-lo)}
+.badge.off{background:#fdf1ee;color:var(--alert);border-color:#eab9af}
+.switchrow{display:flex;justify-content:space-between;align-items:center;gap:var(--sp-3);padding:var(--sp-3) 0;
   border-bottom:1px solid var(--rule-2);flex-wrap:wrap}
+/* 开关行里的状态牌定宽：否则「已开启」和「--」宽度不同，右侧按钮上下对不齐 */
+.switchrow .badge{min-width:4.6em;justify-content:center}
 .switchrow:last-child{border-bottom:none}
 
 /* ---------- 仪器面 ---------- */
 canvas{background:var(--surface);border:1px solid var(--rule);border-radius:var(--radius-sm);width:100%;touch-action:none;display:block}
-.readoutline{font-family:var(--mono);font-size:.78rem;color:var(--ink-2);margin-top:6px;font-variant-numeric:tabular-nums}
-#usbLog{background:#0d2720;color:#cfe9dd;font-family:var(--mono);font-size:.76rem;line-height:1.65;padding:12px;
+.readoutline{font-family:var(--mono);font-size:.8rem;color:var(--ink-2);margin-top:var(--sp-2);font-variant-numeric:tabular-nums}
+#usbLog{background:#0d2720;color:#cfe9dd;font-family:var(--mono);font-size:.78rem;line-height:1.7;padding:var(--sp-3);
   border-radius:var(--radius-sm);max-height:200px;overflow:auto;white-space:pre-wrap;word-break:break-all;border:1px solid #0a1f29}
-.note{font-size:.84rem;color:var(--ink-2);margin-top:6px;line-height:1.55}
-.warnbox{background:#fdf7ec;border:1px solid #efdcbb;border-left:3px solid var(--charge);border-radius:6px;
-  padding:10px 12px;font-size:.86rem;margin-top:8px}
+#usbLog:focus-visible{outline:2px solid var(--flow);outline-offset:2px}
+.note{font-size:.85rem;color:var(--ink-2);margin-top:var(--sp-2);line-height:1.6}
+.warnbox{display:flex;gap:var(--sp-2);align-items:flex-start;background:#fdf7ec;border:1px solid #efdcbb;
+  border-left:3px solid var(--charge);border-radius:var(--radius-sm);padding:var(--sp-3);font-size:.86rem;margin-top:var(--sp-2)}
+.warnbox svg{flex:none;margin-top:3px;color:var(--charge-ink)}
+.warnbox b{font-weight:650}
 .info{font-size:.92rem;color:var(--ink-2)}
-.footnote{text-align:center;color:var(--ink-3);font-size:.78rem;margin:22px 0 6px;font-family:var(--mono)}
-#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;
-  padding:12px 20px;border-radius:999px;opacity:0;pointer-events:none;transition:opacity .25s;max-width:90vw;z-index:99;font-size:.92rem}
+.footnote{text-align:center;color:var(--ink-2);font-size:.8rem;margin:var(--sp-6) 0 var(--sp-1);font-family:var(--mono)}
+#toast{position:fixed;bottom:calc(var(--sp-6) + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);
+  background:var(--ink);color:#fff;padding:var(--sp-3) var(--sp-5);border-radius:var(--radius-pill);opacity:0;
+  pointer-events:none;transition:opacity .25s;max-width:90vw;z-index:99;font-size:.92rem;box-shadow:0 6px 24px rgba(16,34,46,.24)}
 #toast.show{opacity:1}
-#otaBarFill{background:var(--flow)!important}
+/* OTA 进度：轨道 + 进度条 + 百分比读数 */
+.otabar{display:flex;align-items:center;gap:var(--sp-3);margin-top:var(--sp-3)}
+.otatrack{flex:1;height:10px;background:var(--rule);border-radius:var(--radius-pill);overflow:hidden}
+#otaBarFill{height:100%;width:0%;background:var(--flow);border-radius:var(--radius-pill);transition:width .12s}
+#otaPct{font-family:var(--mono);font-size:.82rem;color:var(--ink-2);font-variant-numeric:tabular-nums;min-width:3.2em;text-align:right}
 
-/* ---------- 夜间：同一套语言，睡眠场景（床头/夜间出门） ---------- */
+/* ---------- 夜间：同一套 token，另给一套值（床头/夜间出门） ---------- */
 @media (prefers-color-scheme:dark){
   :root{
-    --bg:#0a1512; --surface:#111f1a; --surface-2:#162720; --ink:#e8f2ec; --ink-2:#9db5aa; --ink-3:#6c8579;
-    --rule:#22332c; --rule-2:#1a2a24; --flow:#4ecfa6; --flow-hi:#71dbb8; --flow-soft:#0f2a24; --flow-lo:#1b4238;
-    --charge:#e8b264; --alert:#f07a63;
+    --bg:#0a1512; --surface:#111f1a; --surface-2:#162720;
+    --ink:#e8f2ec; --ink-2:#9db5aa; --ink-3:#7d968a;
+    --rule:#22332c; --rule-2:#1a2a24;
+    --flow:#4ecfa6; --flow-hi:#71dbb8; --flow-ink:#71dbb8; --on-flow:#04222c;
+    --flow-soft:#0f2a24; --flow-lo:#1b4238;
+    --charge:#e8b264; --charge-ink:#e8b264; --alert:#f07a63;
+    --on:var(--flow-ink); --off:var(--alert);
     --shadow:0 2px 12px rgba(0,0,0,.35),0 1px 2px rgba(0,0,0,.3);
   }
   body{background:radial-gradient(120% 60% at 50% -10%, #0f2c22 0%, rgba(15,44,34,0) 60%), var(--bg)}
   .hero{background:linear-gradient(180deg,#122a22 0%,var(--surface) 60%)}
   .dial{box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 2px 16px rgba(0,0,0,.35)}
-  .btn-pri,.btn-on,.tabs button.active{color:#04222c}
   .btn-off:hover{background:#2a1815;border-color:#5a3229}
   .btn-warn:hover{background:#2a2216;border-color:#5a4826}
-  .badge.on{border-color:#1d4d5e}
   .badge.off{background:#2a1815;border-color:#5a3229}
   .warnbox{background:#2a2216;border-color:#4a3a1e;border-left-color:var(--charge)}
   #usbLog{background:#081b16;border-color:#123029;color:#c6e8d8}
   #toast{background:#e8f1f6;color:#0a141b}
 }
 @media (max-width:520px){
-  body{padding:0 12px 24px;font-size:15px}
+  body{padding:0 var(--sp-3) var(--sp-5);font-size:15px}
   .dial{width:192px;height:192px}
   .dialval{font-size:2.6rem}
-  .grid4{grid-template-columns:repeat(2,1fr)}
   .grid2{grid-template-columns:1fr}
-  .card{padding:14px 14px 16px}
+  .grid2.split::before{display:none}
+  .card{padding:var(--sp-3) var(--sp-3) var(--sp-4)}
+  .tabs button,.btn{padding:0 var(--sp-3)}
+  /* 移动端输入框 ≥16px：避免 iOS 聚焦时自动放大页面 */
+  input[type=number],input[type=text],textarea{font-size:16px}
 }
 @media (prefers-reduced-motion:reduce){
   *{transition:none!important;animation:none!important}
@@ -211,7 +257,7 @@ canvas{background:var(--surface);border:1px solid var(--rule);border-radius:var(
     <span class="model">NEW W96D / W96D Pro / 老版 W96D</span>
   </div>
   <div id="connBar" style="margin-top:14px">
-    <span id="connDot"></span><span id="connText" class="state">未连接</span>
+    <span id="connDot" aria-hidden="true"></span><span id="connText" class="state">未连接</span>
     <span style="flex:1"></span>
     <button class="btn btn-pri" id="btnConnectBle">连接蓝牙</button>
     <button class="btn" id="btnConnectUsb" style="display:none">连接 USB（老版）</button>
@@ -221,22 +267,22 @@ canvas{background:var(--surface);border:1px solid var(--rule);border-radius:var(
   <div class="note" id="connHint" style="margin-top:10px">NEW W96D / W96Pro 走蓝牙（Web Bluetooth）。老版 W96D 为 HID 类设备：<b>电脑版 Chrome/Edge 点「连接HID」</b>。安卓手机需等 Chrome 157 官方支持 WebHID（当前仅 Canary/Dev 有实验 flag）。</div>
 </header>
 
-<div class="tabs">
-  <button data-tab="tabCtrl" class="active">控制</button>
-  <button data-tab="tabCurve" id="tabBtnCurve">自然风曲线</button>
-  <button data-tab="tabPd" id="tabBtnPd" style="display:none">PRO 实验</button>
-  <button data-tab="tabInfo" id="tabBtnInfo">设备信息</button>
-  <button data-tab="tabHelp">帮助</button>
+<div class="tabs" role="tablist" aria-label="功能页">
+  <button data-tab="tabCtrl" id="tabBtnCtrl" role="tab" aria-controls="tabCtrl" aria-selected="true" class="active">控制</button>
+  <button data-tab="tabCurve" id="tabBtnCurve" role="tab" aria-controls="tabCurve" aria-selected="false">自然风曲线</button>
+  <button data-tab="tabPd" id="tabBtnPd" role="tab" aria-controls="tabPd" aria-selected="false" style="display:none">PRO 实验</button>
+  <button data-tab="tabInfo" id="tabBtnInfo" role="tab" aria-controls="tabInfo" aria-selected="false">设备信息</button>
+  <button data-tab="tabHelp" id="tabBtnHelp" role="tab" aria-controls="tabHelp" aria-selected="false">帮助</button>
 </div>
 
 <!-- ============ 控制 ============ -->
-<div id="tabCtrl" class="tabpage active">
+<div id="tabCtrl" class="tabpage active" role="tabpanel" aria-labelledby="tabBtnCtrl">
   <div id="bleCtrl" class="modgrid" style="display:none">
     <div class="card hero span2">
       <div class="breeze" aria-hidden="true"><i></i><i></i><i></i></div>
       <div class="dialwrap">
         <div class="dial" id="bleDial" role="slider" tabindex="0" aria-label="风量"
-             aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+             aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="0%">
           <svg viewBox="0 0 132 132" aria-hidden="true">
             <circle class="track" cx="66" cy="66" r="56" transform="rotate(135 66 66)"></circle>
             <circle class="arc" id="dialArc" cx="66" cy="66" r="56" transform="rotate(135 66 66)"></circle>
@@ -257,17 +303,16 @@ canvas{background:var(--surface);border:1px solid var(--rule);border-radius:var(
         </div>
       </div>
       <input type="range" id="bleSpeed" class="vishide" min="0" max="100" value="50" aria-label="无级转速">
-      <div class="note" style="margin-top:2px">拖动圆盘无级调风量；档位按钮按下面的标定值下发。</div>
+      <div class="note">拖动圆盘无级调风量；档位按钮按下面的标定值下发。</div>
     </div>
     <div class="card">
-      <h3>模式</h3>
+      <h2>模式</h2>
       <div class="row">
         <button class="btn" id="bleTurbo">Turbo</button>
         <button class="btn" id="bleNW">自然风</button>
       </div>
       <div class="row" style="margin-top:8px">
-        <label>Turbo 时长(秒)</label>
-        <input type="number" id="bleTurboTime" min="0" max="600" value="199" style="width:90px">
+        <label class="fld">Turbo 时长(秒)<input type="number" id="bleTurboTime" min="0" max="600" value="199" style="width:88px"></label>
         <button class="btn btn-tiny" id="bleTurboTimeApply">应用</button>
         <span class="badge" id="bleTurboRemain">Turbo 剩余:--</span>
       </div>
@@ -275,51 +320,49 @@ canvas{background:var(--surface);border:1px solid var(--rule);border-radius:var(
         <span class="row"><span class="badge" id="bleGearDownBadge">--</span><button class="btn btn-tiny" id="bleGearDownMode">切换</button></span></div>
     </div>
     <div class="card">
-      <h3>灯光</h3>
+      <h2>灯光</h2>
       <div class="row" id="lightBtns"></div>
       <div class="info disp" id="lightCur" data-cur="">当前亮度:--</div>
     </div>
-    <div class="card">
-      <h3>定时与休眠</h3>
+    <div class="card span2">
+      <h2>定时与休眠</h2>
       <div class="grid2">
         <div>
-          <label>定时(分钟)</label>
           <div class="row">
-            <input type="number" id="bleTimerMin" value="60" style="width:90px">
+            <label class="fld">定时(分钟)<input type="number" id="bleTimerMin" value="60" style="width:88px"></label>
             <button class="btn btn-tiny" id="bleTimerSet">设置</button>
             <button class="btn btn-tiny" id="bleTimerCancel">取消</button>
           </div>
           <div class="info disp" id="bleTimerRemain">剩余:--</div>
         </div>
         <div>
-          <label>自动休眠(秒，0=永不)</label>
           <div class="row">
-            <input type="number" id="bleSleep" value="300" style="width:90px">
+            <label class="fld">自动休眠(秒)<input type="number" id="bleSleep" value="300" style="width:80px"></label>
             <button class="btn btn-tiny" id="bleSleepApply">应用</button>
             <button class="btn btn-tiny" id="bleSleepNever">永不</button>
           </div>
           <div class="info disp" id="bleSleepCur">当前:--</div>
+          <div class="note">填 0 = 永不休眠。</div>
         </div>
       </div>
     </div>
-    <div class="card">
-      <h3>档位标定与直设</h3>
+    <div class="card span2">
+      <h2>档位标定与直设</h2>
       <div class="row">
-        <label>1 档</label><input type="number" id="calib1" min="0" max="100" style="width:72px" title="第1档">
-        <label>2 档</label><input type="number" id="calib2" min="0" max="100" style="width:72px" title="第2档">
-        <label>3 档</label><input type="number" id="calib3" min="0" max="100" style="width:72px" title="第3档">
-        <label>4 档</label><input type="number" id="calib4" min="0" max="100" style="width:72px" title="第4档">
+        <label class="fld">1 档<input type="number" id="calib1" min="0" max="100" style="width:76px"></label>
+        <label class="fld">2 档<input type="number" id="calib2" min="0" max="100" style="width:76px"></label>
+        <label class="fld">3 档<input type="number" id="calib3" min="0" max="100" style="width:76px"></label>
+        <label class="fld">4 档<input type="number" id="calib4" min="0" max="100" style="width:76px"></label>
         <button class="btn btn-tiny" id="bleCalibApply">保存标定</button>
       </div>
       <div class="row" style="margin-top:10px">
-        <label>直设转速</label>
-        <input type="number" id="bleSpeedInput" min="0" max="100" value="50" style="width:80px">
+        <label class="fld">直设转速<input type="number" id="bleSpeedInput" min="0" max="100" value="50" style="width:88px"></label>
         <button class="btn btn-tiny" id="bleSpeedApply">应用</button>
       </div>
     </div>
     <div class="card span2">
-      <h3>实时状态</h3>
-      <div class="grid2">
+      <h2>实时状态</h2>
+      <div class="grid2 split">
         <div>
           <div class="kv"><span class="k">转速</span><span class="disp" id="rtSpeed">--</span></div>
           <div class="kv"><span class="k">电池电压</span><span class="disp" id="rtBv">--</span></div>
@@ -335,7 +378,7 @@ canvas{background:var(--surface);border:1px solid var(--rule);border-radius:var(
           <div class="kv"><span class="k">电机功率</span><span class="disp" id="rtMp">--</span></div>
         </div>
       </div>
-      <div class="grid2" style="margin-top:6px">
+      <div class="grid2 split" style="margin-top:6px">
         <div>
           <div class="kv"><span class="k">固件版本</span><span class="disp" id="infoVer">--</span></div>
         </div>
@@ -348,7 +391,7 @@ canvas{background:var(--surface);border:1px solid var(--rule);border-radius:var(
 
   <div id="usbCtrl" class="modgrid" style="display:none">
     <div class="card span2">
-      <h3>档位控制（老版 W96D）</h3>
+      <h2>档位控制（老版 W96D）</h2>
       <div class="gearset" style="max-width:none;margin-bottom:12px">
         <button class="btn btn-off uGearBtn" data-gear="0">停止</button>
         <button class="btn uGearBtn" data-gear="1">1 档</button>
@@ -361,18 +404,18 @@ canvas{background:var(--surface);border:1px solid var(--rule);border-radius:var(
       <div class="note" style="margin-top:8px">拖动滑轨实时写入当前运行档位的风速（GSETn，约0.2秒防抖后下发）；档位变化时自动同步位置。停止状态滑轨不可用。</div>
       <label style="margin-top:10px">各档风速设置（1-100）</label>
       <div class="row">
-        <input type="number" id="gset1" min="0" max="255" style="width:80px" value="40" title="第1档风速">
-        <input type="number" id="gset2" min="0" max="255" style="width:80px" value="55" title="第2档风速">
-        <input type="number" id="gset3" min="0" max="255" style="width:80px" value="70" title="第3档风速">
-        <input type="number" id="gset4" min="0" max="255" style="width:80px" value="85" title="第4档风速">
+        <input type="number" id="gset1" min="0" max="255" aria-label="第1档风速" style="width:80px" value="40" title="第1档风速">
+        <input type="number" id="gset2" min="0" max="255" aria-label="第2档风速" style="width:80px" value="55" title="第2档风速">
+        <input type="number" id="gset3" min="0" max="255" aria-label="第3档风速" style="width:80px" value="70" title="第3档风速">
+        <input type="number" id="gset4" min="0" max="255" aria-label="第4档风速" style="width:80px" value="85" title="第4档风速">
         <button class="btn btn-tiny" id="usbGsetApply">保存风速</button>
       </div>
       <div class="note">切档即生效；每档风速可在上方调好保存，切到该档时会自动读回当前值。</div>
     </div>
     <div class="card span2">
-      <h3>实时状态</h3>
+      <h2>实时状态</h2>
       <div class="kv"><span class="k">序列号</span><span class="disp" id="uSn">--</span></div>
-      <div class="grid2" style="margin-top:6px">
+      <div class="grid2 split" style="margin-top:6px">
         <div>
           <div class="kv"><span class="k">输入电压</span><span class="disp" id="uVbus">--</span></div>
           <div class="kv"><span class="k">电池电压</span><span class="disp" id="uVbat">--</span></div>
@@ -392,16 +435,16 @@ canvas{background:var(--surface);border:1px solid var(--rule);border-radius:var(
 </div>
 
 <!-- ============ 自然风曲线 ============ -->
-<div id="tabCurve" class="tabpage">
+<div id="tabCurve" class="tabpage" role="tabpanel" aria-labelledby="tabBtnCurve">
   <div id="bleCurveCard" class="card">
-    <h3>自然风曲线（蓝牙版，画布 128 点直存设备）</h3>
+    <h2>自然风曲线（蓝牙版，画布 128 点直存设备）</h2>
     <div class="note">适用 NEW W96D / W96Pro（BLE）。曲线 = 128 个风量点，画完一次性写入设备；无分组概念。</div>
     <div class="row" style="margin-bottom:8px">
       <label><input type="checkbox" id="cvSmooth" checked> 平滑</label>
       <label>风量区间</label>
-      <input type="number" id="cvMin" min="0" max="100" value="0" style="width:70px">
+      <input type="number" id="cvMin" min="0" max="100" value="0" aria-label="最小风量" style="width:76px">
       <span style="opacity:.6">~</span>
-      <input type="number" id="cvMax" min="0" max="100" value="100" style="width:70px">
+      <input type="number" id="cvMax" min="0" max="100" value="100" aria-label="最大风量" style="width:76px">
       <button class="btn btn-tiny" id="cvRandom">按区间随机生成</button>
     </div>
     <canvas id="cvCanvas" width="800" height="200"></canvas>
@@ -415,14 +458,14 @@ canvas{background:var(--surface);border:1px solid var(--rule);border-radius:var(
     <div class="note">提示：即使自然风关闭也可修改并保存，开启后生效。画布按住拖动直接画曲线。</div>
   </div>
   <div id="usbCurveCard" class="card" style="display:none">
-    <h3>自然风曲线（老版 USB，10 点/组，最多 20 组）</h3>
+    <h2>自然风曲线（老版 USB，10 点/组，最多 20 组）</h2>
     <div class="note">适用老版 W96D（USB/HID）。画布 100 点 = 10 组（默认）；每点 = 一个风量值 0-100。</div>
     <div class="row" style="margin-bottom:8px">
       <label><input type="checkbox" id="uvSmooth" checked> 平滑</label>
       <label>风量区间</label>
-      <input type="number" id="uvMin" min="0" max="100" value="0" style="width:70px">
+      <input type="number" id="uvMin" min="0" max="100" value="0" aria-label="最小风量" style="width:76px">
       <span style="opacity:.6">~</span>
-      <input type="number" id="uvMax" min="0" max="100" value="100" style="width:70px">
+      <input type="number" id="uvMax" min="0" max="100" value="100" aria-label="最大风量" style="width:76px">
       <button class="btn btn-tiny" id="uvRandom">按区间随机生成</button>
       <span class="badge">100 点 = 10 组（上限 20 组 / 200 点）</span>
     </div>
@@ -442,10 +485,10 @@ canvas{background:var(--surface);border:1px solid var(--rule);border-radius:var(
 </div>
 
 <!-- ============ 快充 (Pro) ============ -->
-<div id="tabPd" class="tabpage">
+<div id="tabPd" class="tabpage" role="tabpanel" aria-labelledby="tabBtnPd">
   <div class="card">
-    <h3>快充实时状态</h3>
-    <div class="grid2">
+    <h2>快充实时状态</h2>
+    <div class="grid2 split">
       <div>
         <div class="kv"><span class="k">VBUS 电压</span><span class="disp" id="pdVv">--</span></div>
         <div class="kv"><span class="k">VBUS 电流</span><span class="disp" id="pdVi">--</span></div>
@@ -463,14 +506,14 @@ canvas{background:var(--surface);border:1px solid var(--rule);border-radius:var(
     </div>
   </div>
   <div class="card">
-    <h3>输入控制</h3>
+    <h2>输入控制</h2>
     <div class="switchrow"><span>C口输入快充<br><span class="note" style="margin:0">开启或关闭 C 口输入快充功能</span></span>
       <span class="row"><span class="badge" id="pdCinBadge">--</span><button class="btn btn-tiny" id="pdCinOn">打开</button><button class="btn btn-tiny" id="pdCinOff">关闭</button></span></div>
     <div class="switchrow"><span>输入支持 12V<br><span class="note" style="margin:0">是否支持 12V 输入电压</span></span>
       <span class="row"><span class="badge" id="pd12vBadge">--</span><button class="btn btn-tiny" id="pd12vOn">打开</button><button class="btn btn-tiny" id="pd12vOff">关闭</button></span></div>
   </div>
   <div class="card">
-    <h3>协议配置（输入快充协议开关）</h3>
+    <h2>协议配置（输入快充协议开关）</h2>
     <div class="switchrow"><span>PD<br><span class="note" style="margin:0">USB PD 通用快充协议（开启或关闭 PD 输入）</span></span>
       <span class="row"><span class="badge" id="pdSinkBadge">--</span><button class="btn btn-tiny" id="pdSinkOn">打开</button><button class="btn btn-tiny" id="pdSinkOff">关闭</button></span></div>
     <div class="switchrow"><span>FCP<br><span class="note" style="margin:0">华为 FCP 输入协议</span></span>
@@ -483,16 +526,16 @@ canvas{background:var(--surface);border:1px solid var(--rule);border-radius:var(
       <button class="btn" id="pdRefresh">刷新</button>
       <button class="btn btn-warn" id="pdReset">恢复默认</button>
     </div>
-    <div class="warnbox">⚠ 高风险：可能烧毁设备，后果自负。部分固件下开关可能无效。</div>
+    <div class="warnbox"><svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.8 18.4 17H1.6L10 2.8Z"/><path d="M10 8.2v3.6M10 14.4h.01"/></svg><span><b>高风险</b>：可能烧毁设备，后果自负。部分固件下开关可能无效。</span></div>
   </div>
 </div>
 
 <!-- ============ 设备信息 ============ -->
-<div id="tabInfo" class="tabpage">
+<div id="tabInfo" class="tabpage" role="tabpanel" aria-labelledby="tabBtnInfo">
   <div class="note" id="infoBleOnly" style="display:none;margin-bottom:10px">本页两个功能（蓝牙名称显示 SN、电池容量设置）仅蓝牙连接的 NEW W96D / W96P 支持，老版 W96D 固件无对应命令。</div>
 
   <div class="card" id="otaCard">
-    <h3>固件升级</h3>
+    <h2>固件升级</h2>
     <div class="row">
       <input type="file" id="otaFile" accept=".up,application/octet-stream" style="font-size:.85rem">
       <button class="btn btn-pri" id="otaStart">开始升级</button>
@@ -503,16 +546,17 @@ canvas{background:var(--surface);border:1px solid var(--rule);border-radius:var(
         <span class="note" style="margin:0">默认 20 即可；若升级过程中断，可试着放大到 30~40</span>
       </label>
     </div>
-    <div class="note" style="margin-top:8px;color:var(--off)">
-      ⚠ 升级中请保持供电与页面开启，不要断电或离开；中途失败可重新连接后再升一次。
+    <div class="warnbox"><svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.8 18.4 17H1.6L10 2.8Z"/><path d="M10 8.2v3.6M10 14.4h.01"/></svg><span><b>升级中请保持供电与页面开启</b>，不要断电或离开；中途失败可重新连接后再升一次。</span></div>
+    <div class="otabar">
+      <div class="otatrack" id="otaTrack" role="progressbar" aria-label="固件写入进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <div id="otaBarFill"></div>
+      </div>
+      <span id="otaPct">0%</span>
     </div>
-    <div style="height:9px;background:var(--border);border-radius:5px;overflow:hidden;margin-top:10px">
-      <div id="otaBarFill" style="height:100%;width:0%;background:var(--pri);transition:width .12s"></div>
-    </div>
-    <div id="otaOut" class="note" style="margin-top:6px">选择固件文件（<code>.up</code>）后点「开始升级」。</div>
+    <div id="otaOut" class="note" role="status" aria-live="polite">选择固件文件（<code>.up</code>）后点「开始升级」。</div>
   </div>
   <div class="card" id="infoSnCard">
-    <h3>蓝牙名称显示 SN</h3>
+    <h2>蓝牙名称显示 SN</h2>
     <div class="note" style="margin:0 0 8px">开启后手机蓝牙列表里的设备名会带上序列号（如 W96D_sn），方便区分多台风扇。</div>
     <div class="row">
       <button class="btn btn-tiny" id="bleSnOn">名称中显示 SN</button>
@@ -521,10 +565,10 @@ canvas{background:var(--surface);border:1px solid var(--rule);border-radius:var(
     </div>
   </div>
   <div class="card" id="infoBatCard">
-    <h3>电池容量</h3>
+    <h2>电池容量</h2>
     <div class="row">
-      <label>电池容量</label><input type="number" id="batCap" value="4800" style="width:90px">(mAh)
-      <label>满电电压</label><input type="number" id="batVolt" value="3.6" step="0.1" style="width:80px">(V)
+      <label class="fld">电池容量<input type="number" id="batCap" value="4800" style="width:84px"> mAh</label>
+      <label class="fld">满电电压<input type="number" id="batVolt" value="3.6" step="0.1" style="width:72px"> V</label>
       <button class="btn btn-tiny" id="batCapSet">保存到风扇</button>
       <button class="btn btn-tiny" id="batCapRead">读取</button>
     </div>
@@ -533,9 +577,9 @@ canvas{background:var(--surface);border:1px solid var(--rule);border-radius:var(
 </div>
 
 <!-- ============ 帮助 ============ -->
-<div id="tabHelp" class="tabpage">
+<div id="tabHelp" class="tabpage" role="tabpanel" aria-labelledby="tabBtnHelp">
   <div class="card">
-    <h3>使用说明</h3>
+    <h2>使用说明</h2>
     <div class="note" style="font-size:.9rem;line-height:1.8">
       <b>蓝牙（NEW W96D / W96Pro）</b>：点「连接蓝牙」，选 W96D 开头的设备。需要 Chrome / Edge；iOS 不支持。<br>
       <b>老版 W96D（USB 线）</b>：电脑 Chrome/Edge 点「连接HID」，弹窗选 DeepFan。安卓手机暂不支持（等 Chrome 157）。<br>
@@ -545,11 +589,11 @@ canvas{background:var(--surface);border:1px solid var(--rule);border-radius:var(
       <b>安全</b>：电池切勿装反；输入电压勿超规格。<br>
       <b>固件升级</b>：设备信息页 → 固件升级，选择 <code>.up</code> 固件后点「开始升级」。升级期间请保持供电、不要断电或关页面；若中断，重新连接后再升一次即可。协议与流程见项目文档。<br>
       <span style="opacity:.75">© 2026 jackzeng · MIT License · 本工具为逆向研究产物，与 WITRN 官方无关。</span><br>
-      <span style="opacity:.75">版本标记：<b>v20260925o</b>（若与你手上的文件名/说明不一致，请 Ctrl+Shift+R 强刷）</span>
+      <span style="opacity:.75">版本标记：<b>v20260925p</b>（若与你手上的文件名/说明不一致，请 Ctrl+Shift+R 强刷）</span>
     </div>
   </div>
   <div class="card">
-    <h3>USB 诊断（认不出设备时用）</h3>
+    <h2>USB 诊断（认不出设备时用）</h2>
     <div class="row">
       <button class="btn btn-tiny" id="diagHidAny">选 HID 设备看信息</button>
       <button class="btn btn-tiny" id="diagUsbAny">选 USB 设备看信息</button>
@@ -564,14 +608,14 @@ canvas{background:var(--surface);border:1px solid var(--rule);border-radius:var(
   <div class="switchrow"><span>通信日志<button class="btn btn-tiny" id="logClear" style="margin-left:10px">清空</button></span>
     <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="logToggle" checked> 显示日志</label>
     <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="telLogToggle"> 遥测日志</label></div>
-  <div id="usbLog" style="display:none"></div>
+  <div id="usbLog" tabindex="0" aria-label="通信日志" style="display:none"></div>
 </div>
 
 <div class="footnote">
-  © 2026 jackzeng · W96D 统一控制台 v20260925o · MIT License · 逆向研究产物，与 WITRN 官方无关
+  © 2026 jackzeng · W96D 统一控制台 v20260925p · MIT License · 逆向研究产物，与 WITRN 官方无关
 </div>
 
-<div id="toast"></div>
+<div id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
 <script id="protocol-core">
 /* ================= 协议核心（与官方实现逐位对齐，可供 Node 单测） ================= */
@@ -703,7 +747,7 @@ function paintFlow(v) {
   // 注意：必须用内联样式——CSS 类里的 stroke-dasharray 优先级高于属性
   if (arc) arc.style.strokeDasharray = `${(DIAL_C * DIAL_SWEEP * pct / 100).toFixed(2)} ${DIAL_C.toFixed(2)}`;
   const d = $('bleDial');
-  if (d) d.setAttribute('aria-valuenow', String(Math.round(pct)));
+  if (d) { const v = Math.round(pct); d.setAttribute('aria-valuenow', String(v)); d.setAttribute('aria-valuetext', v + '%'); }
   const sl = $('bleSpeed'); if (sl && +sl.value !== Math.round(pct)) sl.value = Math.round(pct);
   const hero = document.querySelector('#bleCtrl .hero');
   if (hero) hero.classList.toggle('blowing', pct > 0);   // 有风才飘（响应状态）
@@ -1435,7 +1479,7 @@ function pwFeed(vbat, ibat) {
 
 /* ---------- 事件绑定 ---------- */
 document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => {
-  document.querySelectorAll('.tabs button').forEach(x => x.classList.remove('active'));
+  document.querySelectorAll('.tabs button').forEach(x => { x.classList.remove('active'); if (x.setAttribute) x.setAttribute('aria-selected', String(x === b)); });
   document.querySelectorAll('.tabpage').forEach(x => x.classList.remove('active'));
   b.classList.add('active'); $(b.dataset.tab).classList.add('active');
   if (b.dataset.tab === 'tabCurve') { cv.draw(); uv.draw(); }
@@ -1505,7 +1549,12 @@ const OTA_PACE_MS = 18;   // 写入间隔默认值（与官方客户端实测节
 const OTA_END_RETRIES = (typeof globalThis !== 'undefined' && Number.isInteger(globalThis.OTA_END_RETRIES) && globalThis.OTA_END_RETRIES > 0) ? globalThis.OTA_END_RETRIES : 3;
 const OTA_END_TIMEOUT = (typeof globalThis !== 'undefined' && Number.isFinite(globalThis.OTA_END_TIMEOUT) && globalThis.OTA_END_TIMEOUT > 0) ? globalThis.OTA_END_TIMEOUT : 20000;
 function otaUI(pct, text) {
-  if (pct !== undefined && pct !== null && !isNaN(pct)) { const f = $('otaBarFill'); if (f) f.style.width = Math.max(0, Math.min(100, pct)).toFixed(1) + '%'; }
+  if (pct !== undefined && pct !== null && !isNaN(pct)) {
+    const v = Math.max(0, Math.min(100, Number(pct)));
+    const f = $('otaBarFill'); if (f) f.style.width = v.toFixed(1) + '%';
+    const bar = $('otaTrack'); if (bar && bar.setAttribute) bar.setAttribute('aria-valuenow', String(Math.round(v)));
+    const pc = $('otaPct'); if (pc) pc.textContent = Math.round(v) + '%';
+  }
   if (text !== undefined) { const o = $('otaOut'); if (o) o.textContent = text; }
 }
 async function otaParseFile() {
