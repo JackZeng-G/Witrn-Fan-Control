@@ -6,7 +6,7 @@ const fs=require('fs'),vm=require('vm');
 const html=fs.readFileSync(path.join(ROOT, 'W96D统一控制台.html'),'utf8');
 const script=[...html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/g)].map(m=>m[1]).join('\n');
 const ELS={};
-const ctx2d={clearRect(){},beginPath(){},moveTo(){},lineTo(){},stroke(){},arc(){},fill(){},fillRect(){},drawImage(){},getImageData:()=>({data:new Uint8ClampedArray(4)}),putImageData(){}};
+const ctx2d={clearRect(){},beginPath(){},moveTo(){},lineTo(){},stroke(){},arc(){},fill(){},fillRect(){},drawImage(){},getImageData:()=>({data:new Uint8ClampedArray(4)}),putImageData(){},fillText(){},save(){},restore(){},setLineDash(){},measureText:()=>({width:0})};
 const mk=id=>({id,textContent:'',value:'',checked:false,disabled:false,style:{},innerHTML:'',scrollTop:0,addEventListener(){},classList:{add(){},remove(){},contains:()=>false},querySelector(){return null},querySelectorAll(){return[]},dataset:{},width:300,height:150,getContext:()=>ctx2d,getBoundingClientRect:()=>({left:0,top:0,width:300,height:150})});
 const errs=[];
 const ctx={console:{log(){},warn(){},error:(...a)=>errs.push(a.join(' '))},setTimeout,clearTimeout,setInterval,clearInterval,Date,Uint8Array,Int32Array,Float32Array,TextEncoder,TextDecoder,Math,JSON,Number,parseInt,parseFloat,isNaN,

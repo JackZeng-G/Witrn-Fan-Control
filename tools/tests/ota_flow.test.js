@@ -12,7 +12,7 @@ const FW = makeFw();   // 合成固件 81860B（仓库不再附带官方固件�
 const html = fs.readFileSync(HTML, 'utf8');
 const script = [...html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/g)].map(m => m[1]).join('\n');
 const ELS = {}, LOGS = [];
-const ctx2d = { clearRect(){},beginPath(){},moveTo(){},lineTo(){},stroke(){},arc(){},fill(){},fillRect(){},drawImage(){},getImageData:()=>({data:new Uint8ClampedArray(4)}),putImageData(){} };
+const ctx2d = { clearRect(){},beginPath(){},moveTo(){},lineTo(){},stroke(){},arc(){},fill(){},fillRect(){},drawImage(){},getImageData:()=>({data:new Uint8ClampedArray(4)}),putImageData(){},fillText(){},save(){},restore(){},setLineDash(){},measureText:()=>({width:0}) };
 const mk = id => ({ id, textContent:'', value:'', checked:false, disabled:false, style:{}, innerHTML:'', scrollTop:0, files:[], addEventListener(){}, classList:{add(){},remove(){},contains:()=>false}, querySelector(){return null}, querySelectorAll(){return[]}, dataset:{}, width:300, height:150, getContext:()=>ctx2d, getBoundingClientRect:()=>({left:0,top:0,width:300,height:150}) });
 const ctx = { console, setTimeout, clearTimeout, setInterval, clearInterval, Date, Uint8Array, TextEncoder, TextDecoder,
   navigator:{userAgent:'Chrome',bluetooth:{}}, location:{href:'file:///x'}, requestAnimationFrame:f=>setTimeout(f,16),

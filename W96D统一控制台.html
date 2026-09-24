@@ -6,7 +6,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>W96D 统一控制台 · v20260925k</title>
+<title>W96D 统一控制台 · v20260925l</title>
 <style>
 /* ============ W96D 控制台 · 视觉系统 ============
    方向「风洞仪表台」：冷纸底 + 印刷式细线 + 一把校准过的气流刻度。
@@ -119,7 +119,7 @@ input[type=number],input[type=text]{
 input[type=number]:focus,input[type=text]:focus{outline:2px solid var(--flow);outline-offset:-1px;border-color:var(--flow)}
 input[type=range]{width:100%;accent-color:var(--flow);height:var(--tap)}
 input[type=checkbox]{accent-color:var(--flow);width:16px;height:16px}
-textarea{width:100%;min-height:72px;border:1px solid var(--rule);border-radius:3px;padding:8px;font-size:.9rem;font-family:inherit;background:var(--panel)}
+textarea{width:100%;min-height:64px;border:1px solid var(--rule);border-radius:3px;padding:8px;font-family:var(--mono);font-size:.72rem;line-height:1.55;background:var(--panel);color:var(--ink-2)}
 
 /* 读数：设备报出来的数一律等宽、右对齐 */
 .val{font-family:var(--mono);font-weight:600;font-size:1.05rem;color:var(--ink)}
@@ -143,6 +143,7 @@ canvas{background:var(--panel);border:1px solid var(--rule);border-radius:3px;wi
   border:1px solid #0c1a18;
 }
 .note{font-size:.82rem;color:var(--ink-2);margin-top:6px;line-height:1.55}
+.readoutline{font-family:var(--mono);font-size:.78rem;color:var(--ink-2);margin-top:6px;font-variant-numeric:tabular-nums}
 .warnbox{background:#fdf4e6;border:1px solid #f0dcbb;border-left:3px solid var(--warm);border-radius:2px;padding:9px 12px;font-size:.85rem;margin-top:8px}
 .info{font-size:.9rem;color:var(--ink-2)}
 #toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 18px;border-radius:3px;opacity:0;pointer-events:none;transition:opacity .25s;max-width:90vw;z-index:99;font-size:.9rem}
@@ -157,6 +158,20 @@ canvas{background:var(--panel);border:1px solid var(--rule);border-radius:3px;wi
   .grid2{grid-template-columns:1fr}
   .tabs{gap:14px}
   input[type=number],input[type=text]{width:88px}
+}
+/* 夜班配色：同一套仪表语言，跟系统深色自动切换 */
+@media (prefers-color-scheme:dark){
+  :root{
+    --paper:#0e1513; --panel:#141d1a; --ink:#e7eeea; --ink-2:#9fada7; --ink-3:#6e7c77;
+    --rule:#26322e; --rule-2:#1b2522; --flow:#41c1b0; --flow-lo:#153c39; --flow-hi:#63d7c6;
+    --alert:#e0715c; --warm:#dda44f;
+  }
+  .btn-pri,.btn-on,.badge.on{color:#06201d}
+  .btn-off:hover{background:#241a18}
+  .badge.off{background:#2a1a17;color:var(--alert)}
+  .warnbox{background:#241d12;border-color:#3a2f1c;border-left-color:var(--warm)}
+  #usbLog{background:#080d0c;border-color:#1d2a26;color:#c2e2db}
+  #toast{background:#e7eeea;color:#0e1513}
 }
 @media (prefers-reduced-motion:reduce){
   *{transition:none!important;animation:none!important}
@@ -366,6 +381,7 @@ canvas{background:var(--panel);border:1px solid var(--rule);border-radius:3px;wi
       <button class="btn btn-tiny" id="cvRandom">按区间随机生成</button>
     </div>
     <canvas id="cvCanvas" width="800" height="200"></canvas>
+    <div class="readoutline" id="cvReadout"></div>
     <div style="margin-top:8px"><textarea id="cvData" spellcheck="false"></textarea></div>
     <div class="row" style="margin-top:8px">
       <button class="btn btn-pri" id="cvApply">应用到设备</button>
@@ -387,6 +403,7 @@ canvas{background:var(--panel);border:1px solid var(--rule);border-radius:3px;wi
       <span class="badge">100 点 = 10 组（上限 20 组 / 200 点）</span>
     </div>
     <canvas id="uvCanvas" width="800" height="200"></canvas>
+    <div class="readoutline" id="uvReadout"></div>
     <div style="margin-top:8px"><textarea id="uvVals" spellcheck="false"></textarea></div>
     <div class="row" style="margin-top:8px">
       <label>整条曲线时长 Time Cycle（1-3600 秒）</label><input type="number" id="uwTim" min="1" max="3600" value="600" style="width:120px">
@@ -504,7 +521,7 @@ canvas{background:var(--panel);border:1px solid var(--rule);border-radius:3px;wi
       <b>安全</b>：电池切勿装反；输入电压勿超规格。<br>
       <b>固件升级</b>：设备信息页 → 固件升级，选择 <code>.up</code> 固件后点「开始升级」。升级期间请保持供电、不要断电或关页面；若中断，重新连接后再升一次即可。协议与流程见项目文档。<br>
       <span style="opacity:.75">© 2026 jackzeng · MIT License · 本工具为逆向研究产物，与 WITRN 官方无关。</span><br>
-      <span style="opacity:.75">版本标记：<b>v20260925k</b>（若与你手上的文件名/说明不一致，请 Ctrl+Shift+R 强刷）</span>
+      <span style="opacity:.75">版本标记：<b>v20260925l</b>（若与你手上的文件名/说明不一致，请 Ctrl+Shift+R 强刷）</span>
     </div>
   </div>
   <div class="card">
@@ -527,7 +544,7 @@ canvas{background:var(--panel);border:1px solid var(--rule);border-radius:3px;wi
 </div>
 
 <div class="footnote">
-  © 2026 jackzeng · W96D 统一控制台 v20260925k · MIT License · 逆向研究产物，与 WITRN 官方无关
+  © 2026 jackzeng · W96D 统一控制台 v20260925l · MIT License · 逆向研究产物，与 WITRN 官方无关
 </div>
 
 <div id="toast"></div>
@@ -1063,22 +1080,56 @@ async function batCapRead(silent) {
 function makeCurveEditor(p) {
   // p: {canvas, textarea, points, getN?, smooth, quiet, strong, min, max, randBtn}
   const E = { data: Array(p.points).fill(50), sel: -1, drag: false, points: p.points };
+  const PAD = { l: 36, r: 10, t: 8, b: 20 };   // 给刻度留边
   E.draw = () => {
     const c = p.canvas, ctx = c.getContext('2d'); const W = c.width, H = c.height;
-    ctx.clearRect(0, 0, W, H); ctx.strokeStyle = '#d3dad6';
-    for (let y = 0; y <= 100; y += 25) { ctx.beginPath(); ctx.moveTo(0, H - y / 100 * H); ctx.lineTo(W, H - y / 100 * H); ctx.stroke(); }
-    ctx.strokeStyle = '#0e7f7a'; ctx.lineWidth = 2; ctx.beginPath();
-    E.data.forEach((v, i) => { const x = i / (E.points - 1) * W, y = H - v / 100 * (H - 8) - 4; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
+    // 非浏览器上下文（Node mock）没有 getComputedStyle：退回默认色，保证脚本仍可加载
+    const cs = (typeof getComputedStyle === 'function') ? getComputedStyle(document.documentElement) : null;
+    const tk = n => (cs ? (cs.getPropertyValue(n) || '').trim() : '');
+    const rule = tk('--rule') || '#d3dad6', flow = tk('--flow') || '#0e7f7a', dim = tk('--ink-3') || '#8b9aa2';
+    const x0 = PAD.l, y0 = PAD.t, gW = W - PAD.l - PAD.r, gH = H - PAD.t - PAD.b;
+    ctx.clearRect(0, 0, W, H);
+    ctx.font = '11px ui-monospace, Menlo, Consolas, monospace';
+    // 风量刻度：25 一档，数字在左
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    for (let v = 0; v <= 100; v += 25) {
+      const y = y0 + gH - v / 100 * gH;
+      ctx.strokeStyle = rule; ctx.lineWidth = v === 0 ? 1.5 : 1;
+      ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x0 + gW, y); ctx.stroke();
+      ctx.fillStyle = dim; ctx.fillText(String(v), x0 - 7, y);
+    }
+    // 点数刻度：0 / ¼ / ½ / ¾ / 末点
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    for (const i of [0, Math.round((E.points - 1) / 4), Math.round((E.points - 1) / 2), Math.round((E.points - 1) * 3 / 4), E.points - 1]) {
+      ctx.fillStyle = dim; ctx.fillText(String(i), x0 + i / (E.points - 1) * gW, y0 + gH + 5);
+    }
+    // 曲线
+    ctx.strokeStyle = flow; ctx.lineWidth = 2; ctx.beginPath();
+    E.data.forEach((v, i) => { const x = x0 + i / (E.points - 1) * gW, y = y0 + gH - v / 100 * gH; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
     ctx.stroke();
-    if (E.sel >= 0) { const x = E.sel / (E.points - 1) * W, y = H - E.data[E.sel] / 100 * (H - 8) - 4; ctx.fillStyle = '#0e7f7a'; ctx.beginPath(); ctx.arc(x, y, 5, 0, 7); ctx.fill(); }
+    // 游标 + 选中点
+    if (E.sel >= 0) {
+      const x = x0 + E.sel / (E.points - 1) * gW, y = y0 + gH - E.data[E.sel] / 100 * gH;
+      ctx.save(); ctx.setLineDash([3, 4]); ctx.strokeStyle = dim; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(x, y0); ctx.lineTo(x, y0 + gH); ctx.stroke(); ctx.restore();
+      ctx.fillStyle = flow; ctx.beginPath(); ctx.arc(x, y, 4.5, 0, 7); ctx.fill();
+    }
+    // 读数行
+    const ro = p.readout && $(p.readout);
+    if (ro) {
+      const peak = Math.max.apply(null, E.data), avg = Math.round(E.data.reduce((a, b) => a + b, 0) / E.data.length);
+      ro.textContent = (E.sel >= 0 ? `第 ${E.sel} 点 ${E.data[E.sel]}%` : `共 ${E.points} 点`) + `\u3000峰值 ${peak}%\u3000均值 ${avg}%`;
+    }
   };
   E.sync = () => { p.textarea.value = E.data.join(','); E.draw(); };
   E.pointFromEvent = ev => {
     const c = p.canvas, r = c.getBoundingClientRect();
     const x = (ev.touches ? ev.touches[0].clientX : ev.clientX) - r.left;
     const y = (ev.touches ? ev.touches[0].clientY : ev.clientY) - r.top;
-    const i = Math.max(0, Math.min(E.points - 1, Math.round(x / r.width * (E.points - 1))));
-    const v = Math.max(0, Math.min(100, Math.round((1 - y / r.height) * 100)));
+    const cx = x / r.width * c.width, cy = y / r.height * c.height;
+    const gW = c.width - PAD.l - PAD.r, gH = c.height - PAD.t - PAD.b;
+    const i = Math.max(0, Math.min(E.points - 1, Math.round((cx - PAD.l) / gW * (E.points - 1))));
+    const v = Math.max(0, Math.min(100, Math.round((1 - (cy - PAD.t) / gH) * 100)));
     E.data[i] = v; E.sel = i; E.sync();
   };
   E.random = () => {
@@ -1093,9 +1144,11 @@ function makeCurveEditor(p) {
   p.canvas.addEventListener('touchmove', e => { e.preventDefault(); if (E.drag || e.touches.length) E.pointFromEvent(e); }, { passive: false });
   return E;
 }
-const cv = makeCurveEditor({ canvas: $('cvCanvas'), textarea: $('cvData'), points: 128, smooth: 'cvSmooth', min: 'cvMin', max: 'cvMax' });
+const cv = makeCurveEditor({ canvas: $('cvCanvas'), textarea: $('cvData'), points: 128, smooth: 'cvSmooth', min: 'cvMin', max: 'cvMax', readout: 'cvReadout' });
 cv.data = DEFAULT_NATURE_WIND_CURVE.slice(); cv.sync();
-const uv = makeCurveEditor({ canvas: $('uvCanvas'), textarea: $('uvVals'), points: 100, smooth: 'uvSmooth', min: 'uvMin', max: 'uvMax' });
+const uv = makeCurveEditor({ canvas: $('uvCanvas'), textarea: $('uvVals'), points: 100, smooth: 'uvSmooth', min: 'uvMin', max: 'uvMax', readout: 'uvReadout' });
+// 跟随系统深浅色切换时重绘画布（画布用 CSS 令牌取色）
+if (window && window.matchMedia) { const mq = window.matchMedia('(prefers-color-scheme: dark)'); const redraw = () => { cv.draw(); uv.draw(); }; mq.addEventListener ? mq.addEventListener('change', redraw) : mq.addListener(redraw); }
 uv.data = Array(100).fill(40); uv.sync();
 async function cvApply() {
   if (S.type !== 'ble') return toast('请先连接蓝牙设备');
