@@ -6,7 +6,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>W96D 统一控制台 · v20260925n</title>
+<title>W96D 统一控制台 · v20260925o</title>
 <style>
 /* ============ W96D 控制台 · 视觉系统 v4 ============
    对象是**随身风扇**：电池供电、夏天随身、单手在手机上操作。
@@ -14,18 +14,18 @@
    模块各自成卡（白面 + 表头分隔线 + 柔和阴影），页面不靠细线分区。
    字体分工：界面文案无衬线；数字读数（电量/电压/版本/刻度）等宽。 */
 :root{
-  --bg:#eef4f9;             /* 夏日浅蓝底 */
+  --bg:#eff6f2;             /* 薄荷底：自然风的清凉，不是科技蓝 */
   --surface:#ffffff;
-  --surface-2:#f4f9fd;
+  --surface-2:#f4faf7;
   --ink:#10222e;            /* 深蓝墨 */
   --ink-2:#5b7285;
   --ink-3:#90a6b4;
-  --rule:#dbe7ef;
-  --rule-2:#eef4f8;
-  --flow:#12a0c8;           /* 风：清凉青蓝 */
-  --flow-hi:#0a7fa3;
-  --flow-soft:#e4f5fb;
-  --flow-lo:#cdeaf5;
+  --rule:#d8e7e0;
+  --rule-2:#ecf4f0;
+  --flow:#1fa87f;           /* 风：薄荷绿（自然风） */
+  --flow-hi:#178364;
+  --flow-soft:#e3f5ee;
+  --flow-lo:#c9ebdf;
   --charge:#e8a33d;         /* 充电/ Turbo：暖色，只有这两处用 */
   --alert:#e2553f;          /* 停止/擦除 */
   --radius:16px;            /* 消费电子的圆润 */
@@ -38,7 +38,7 @@
 *{box-sizing:border-box;margin:0;padding:0}
 html{-webkit-text-size-adjust:100%}
 body{font-family:var(--sans);background:
-  radial-gradient(120% 60% at 50% -10%, #e2f2fb 0%, rgba(226,242,251,0) 60%), var(--bg);
+  radial-gradient(120% 60% at 50% -10%, #dcf3e8 0%, rgba(220,243,232,0) 60%), var(--bg);
   color:var(--ink);font-size:15.5px;line-height:1.5;padding:0 16px 28px;max-width:880px;margin:0 auto}
 h1{font-size:1.25rem;font-weight:600;letter-spacing:-.01em}
 
@@ -49,7 +49,7 @@ h1{font-size:1.25rem;font-weight:600;letter-spacing:-.01em}
 #connBar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 #connBar .state{font-size:.88rem;color:var(--ink-2);font-family:var(--mono)}
 #connDot{width:10px;height:10px;border-radius:50%;background:var(--ink-3);display:inline-block;box-shadow:0 0 0 4px rgba(144,166,180,.16)}
-#connDot.ble{background:var(--flow);box-shadow:0 0 0 4px rgba(18,160,200,.16)}
+#connDot.ble{background:var(--flow);box-shadow:0 0 0 4px rgba(31,168,127,.16)}
 #connDot.usb,#connDot.hid{background:#3d7fc4;box-shadow:0 0 0 4px rgba(61,127,196,.16)}
 
 /* ---------- 标签栏（药丸式，好按） ---------- */
@@ -71,21 +71,25 @@ h1{font-size:1.25rem;font-weight:600;letter-spacing:-.01em}
 .modgrid{display:grid;gap:14px;grid-template-columns:1fr;align-items:start}
 @media (min-width:760px){ .modgrid{grid-template-columns:1fr 1fr} .modgrid>.span2{grid-column:1/-1} }
 
-/* ---------- 英雄区：今天的风量 ---------- */
+/* ---------- 英雄区：今天的风量（圆形表盘，可转圈调风） ---------- */
 .hero{position:relative;overflow:hidden;gap:12px;
-  background:linear-gradient(180deg,#f7fcff 0%,var(--surface) 55%)}
+  background:linear-gradient(180deg,#f6fdf9 0%,var(--surface) 55%)}
 .hero::after{content:"";position:absolute;right:-40px;top:-60px;width:220px;height:220px;border-radius:50%;
-  background:radial-gradient(circle,rgba(18,160,200,.10),rgba(18,160,200,0) 70%);pointer-events:none}
-.readout{display:flex;align-items:flex-end;gap:10px;position:relative;z-index:1}
-.readout .num{font-family:var(--mono);font-weight:600;font-size:3.3rem;line-height:.9;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
-.readout .num small{font-size:1.4rem;font-weight:500;margin-left:2px}
-.readout .cap{font-size:.82rem;color:var(--ink-2);padding-bottom:6px}
-.flowscale{position:relative;height:30px;z-index:1}
-.flowscale .grid{position:absolute;left:0;right:0;bottom:12px;height:10px;border-radius:999px;background:var(--rule-2)}
-.flowscale .fill{position:absolute;left:0;bottom:12px;height:10px;border-radius:999px;width:0;
-  background:linear-gradient(90deg,var(--flow-lo),var(--flow));transition:width .4s cubic-bezier(.2,.7,.2,1)}
-.flowscale .ticks{position:absolute;left:0;right:0;bottom:0;height:12px;display:flex;justify-content:space-between}
-.flowscale .ticks span{font-family:var(--mono);font-size:.66rem;color:var(--ink-3)}
+  background:radial-gradient(circle,rgba(31,168,127,.10),rgba(31,168,127,0) 70%);pointer-events:none}
+.dialwrap{display:flex;flex-direction:column;align-items:center;gap:10px;position:relative;z-index:1;padding:2px 0 4px}
+.dial{position:relative;width:204px;height:204px;border-radius:50%;touch-action:none;cursor:grab;
+  background:radial-gradient(circle at 50% 34%,var(--surface),var(--surface-2));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 2px 14px rgba(16,34,46,.08)}
+.dial.drag{cursor:grabbing}
+.dial:focus-visible{outline:2px solid var(--flow);outline-offset:4px}
+.dial svg{position:absolute;inset:0;width:100%;height:100%}
+.dial circle{fill:none;stroke-width:13;stroke-linecap:round}
+.dial .track{stroke:var(--rule);stroke-dasharray:263.89 351.86}   /* 0.75×2πr, r=56 */
+.dial .arc{stroke:var(--flow);stroke-dasharray:0 351.86;transition:stroke-dasharray .18s linear}
+.dialval{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-weight:600;font-size:2.9rem;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.dialval small{font-size:1.35rem;font-weight:500;margin-left:2px}
+.vishide{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 /* 风：只有开机且有风量时才流动（响应状态，不是装饰） */
 .breeze{position:absolute;right:14px;top:18px;width:54px;height:34px;opacity:0;transition:opacity .3s;z-index:1}
 .hero.blowing .breeze{opacity:1}
@@ -129,10 +133,10 @@ input[type=number]:focus,input[type=text]:focus{outline:2px solid var(--flow);ou
 input[type=range]{-webkit-appearance:none;appearance:none;background:transparent;width:100%;height:44px;margin:2px 0}
 input[type=range]::-webkit-slider-runnable-track{height:10px;border-radius:999px;background:var(--rule-2)}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;
-  background:var(--flow);border:3px solid #fff;box-shadow:0 1px 4px rgba(16,34,46,.22);margin-top:-7px}
+  background:var(--flow);border:3px solid var(--surface);box-shadow:0 1px 4px rgba(16,34,46,.22);margin-top:-7px}
 input[type=range]:disabled::-webkit-slider-thumb{background:var(--ink-3)}
 input[type=range]::-moz-range-track{height:10px;border-radius:999px;background:var(--rule-2)}
-input[type=range]::-moz-range-thumb{width:24px;height:24px;border:3px solid #fff;border-radius:50%;background:var(--flow)}
+input[type=range]::-moz-range-thumb{width:24px;height:24px;border:3px solid var(--surface);border-radius:50%;background:var(--flow)}
 input[type=range]:focus-visible{outline:2px solid var(--flow);outline-offset:4px;border-radius:999px}
 input[type=checkbox]{accent-color:var(--flow);width:18px;height:18px}
 textarea{width:100%;min-height:64px;border:1px solid var(--rule);border-radius:var(--radius-sm);padding:10px;
@@ -155,7 +159,7 @@ textarea{width:100%;min-height:64px;border:1px solid var(--rule);border-radius:v
 /* ---------- 仪器面 ---------- */
 canvas{background:var(--surface);border:1px solid var(--rule);border-radius:var(--radius-sm);width:100%;touch-action:none;display:block}
 .readoutline{font-family:var(--mono);font-size:.78rem;color:var(--ink-2);margin-top:6px;font-variant-numeric:tabular-nums}
-#usbLog{background:#0d2733;color:#cfe9f2;font-family:var(--mono);font-size:.76rem;line-height:1.65;padding:12px;
+#usbLog{background:#0d2720;color:#cfe9dd;font-family:var(--mono);font-size:.76rem;line-height:1.65;padding:12px;
   border-radius:var(--radius-sm);max-height:200px;overflow:auto;white-space:pre-wrap;word-break:break-all;border:1px solid #0a1f29}
 .note{font-size:.84rem;color:var(--ink-2);margin-top:6px;line-height:1.55}
 .warnbox{background:#fdf7ec;border:1px solid #efdcbb;border-left:3px solid var(--charge);border-radius:6px;
@@ -170,25 +174,27 @@ canvas{background:var(--surface);border:1px solid var(--rule);border-radius:var(
 /* ---------- 夜间：同一套语言，睡眠场景（床头/夜间出门） ---------- */
 @media (prefers-color-scheme:dark){
   :root{
-    --bg:#0a141b; --surface:#111e26; --surface-2:#16252e; --ink:#e8f1f6; --ink-2:#9db2c0; --ink-3:#6c8493;
-    --rule:#22333d; --rule-2:#1a2a33; --flow:#3fc0e0; --flow-hi:#63d3ef; --flow-soft:#0f2a35; --flow-lo:#1b4250;
+    --bg:#0a1512; --surface:#111f1a; --surface-2:#162720; --ink:#e8f2ec; --ink-2:#9db5aa; --ink-3:#6c8579;
+    --rule:#22332c; --rule-2:#1a2a24; --flow:#4ecfa6; --flow-hi:#71dbb8; --flow-soft:#0f2a24; --flow-lo:#1b4238;
     --charge:#e8b264; --alert:#f07a63;
     --shadow:0 2px 12px rgba(0,0,0,.35),0 1px 2px rgba(0,0,0,.3);
   }
-  body{background:radial-gradient(120% 60% at 50% -10%, #10303d 0%, rgba(16,48,61,0) 60%), var(--bg)}
-  .hero{background:linear-gradient(180deg,#132630 0%,var(--surface) 60%)}
+  body{background:radial-gradient(120% 60% at 50% -10%, #0f2c22 0%, rgba(15,44,34,0) 60%), var(--bg)}
+  .hero{background:linear-gradient(180deg,#122a22 0%,var(--surface) 60%)}
+  .dial{box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 2px 16px rgba(0,0,0,.35)}
   .btn-pri,.btn-on,.tabs button.active{color:#04222c}
   .btn-off:hover{background:#2a1815;border-color:#5a3229}
   .btn-warn:hover{background:#2a2216;border-color:#5a4826}
   .badge.on{border-color:#1d4d5e}
   .badge.off{background:#2a1815;border-color:#5a3229}
   .warnbox{background:#2a2216;border-color:#4a3a1e;border-left-color:var(--charge)}
-  #usbLog{background:#081b23;border-color:#123039;color:#c6e8f2}
+  #usbLog{background:#081b16;border-color:#123029;color:#c6e8d8}
   #toast{background:#e8f1f6;color:#0a141b}
 }
 @media (max-width:520px){
   body{padding:0 12px 24px;font-size:15px}
-  .readout .num{font-size:2.9rem}
+  .dial{width:192px;height:192px}
+  .dialval{font-size:2.6rem}
   .grid4{grid-template-columns:repeat(2,1fr)}
   .grid2{grid-template-columns:1fr}
   .card{padding:14px 14px 16px}
@@ -227,16 +233,16 @@ canvas{background:var(--surface);border:1px solid var(--rule);border-radius:var(
 <div id="tabCtrl" class="tabpage active">
   <div id="bleCtrl" class="modgrid" style="display:none">
     <div class="card hero span2">
-      <div class="readout">
-        <span class="num"><span id="bleSpeedVal">--</span><small>%</small></span>
-        <span class="cap">风量（设备回读）</span>
-      </div>
       <div class="breeze" aria-hidden="true"><i></i><i></i><i></i></div>
-      <div class="flowscale">
-        <div class="grid"></div>
-        <div class="fill" id="flowFill"></div>
-        <div class="knob" id="flowKnob"></div>
-        <div class="ticks"><span>0</span><span>20</span><span>40</span><span>60</span><span>80</span><span>100</span></div>
+      <div class="dialwrap">
+        <div class="dial" id="bleDial" role="slider" tabindex="0" aria-label="风量"
+             aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+          <svg viewBox="0 0 132 132" aria-hidden="true">
+            <circle class="track" cx="66" cy="66" r="56" transform="rotate(135 66 66)"></circle>
+            <circle class="arc" id="dialArc" cx="66" cy="66" r="56" transform="rotate(135 66 66)"></circle>
+          </svg>
+          <div class="dialval"><span id="bleSpeedVal">--</span><small>%</small></div>
+        </div>
       </div>
       <div class="controlbar">
         <div class="row">
@@ -250,9 +256,8 @@ canvas{background:var(--surface);border:1px solid var(--rule);border-radius:var(
           <button class="btn gearBtn" data-gear="4">4 档</button>
         </div>
       </div>
-      <label style="display:block;margin-top:14px">无级转速（0-100%）</label>
-      <input type="range" id="bleSpeed" min="0" max="100" value="50">
-      <div class="note" style="margin-top:2px">滑轨直接下发风速百分比；档位按钮按下面的标定值下发。</div>
+      <input type="range" id="bleSpeed" class="vishide" min="0" max="100" value="50" aria-label="无级转速">
+      <div class="note" style="margin-top:2px">拖动圆盘无级调风量；档位按钮按下面的标定值下发。</div>
     </div>
     <div class="card">
       <h3>模式</h3>
@@ -540,7 +545,7 @@ canvas{background:var(--surface);border:1px solid var(--rule);border-radius:var(
       <b>安全</b>：电池切勿装反；输入电压勿超规格。<br>
       <b>固件升级</b>：设备信息页 → 固件升级，选择 <code>.up</code> 固件后点「开始升级」。升级期间请保持供电、不要断电或关页面；若中断，重新连接后再升一次即可。协议与流程见项目文档。<br>
       <span style="opacity:.75">© 2026 jackzeng · MIT License · 本工具为逆向研究产物，与 WITRN 官方无关。</span><br>
-      <span style="opacity:.75">版本标记：<b>v20260925n</b>（若与你手上的文件名/说明不一致，请 Ctrl+Shift+R 强刷）</span>
+      <span style="opacity:.75">版本标记：<b>v20260925o</b>（若与你手上的文件名/说明不一致，请 Ctrl+Shift+R 强刷）</span>
     </div>
   </div>
   <div class="card">
@@ -563,7 +568,7 @@ canvas{background:var(--surface);border:1px solid var(--rule);border-radius:var(
 </div>
 
 <div class="footnote">
-  © 2026 jackzeng · W96D 统一控制台 v20260925n · MIT License · 逆向研究产物，与 WITRN 官方无关
+  © 2026 jackzeng · W96D 统一控制台 v20260925o · MIT License · 逆向研究产物，与 WITRN 官方无关
 </div>
 
 <div id="toast"></div>
@@ -690,14 +695,43 @@ const S = {
 };
 const $ = id => document.getElementById(id);
 // 气流刻度：把设备回读的风量画到刻度尺上（唯一会动的元素，且只响应"改风量"这个动作）
+const DIAL_SWEEP = 0.75;              // 表盘扫过 270°：0 在左下，经左→顶→右，100 在右下，底部留 90° 口
+const DIAL_C = 2 * Math.PI * 56;      // 弧长（r=56）
 function paintFlow(v) {
   const pct = Math.max(0, Math.min(100, Number(v) || 0));
-  const fill = $('flowFill'), knob = $('flowKnob');
-  if (fill) fill.style.width = pct + '%';
-  if (knob) knob.style.left = `calc(${pct}% - 1px)`;
+  const arc = $('dialArc');
+  // 注意：必须用内联样式——CSS 类里的 stroke-dasharray 优先级高于属性
+  if (arc) arc.style.strokeDasharray = `${(DIAL_C * DIAL_SWEEP * pct / 100).toFixed(2)} ${DIAL_C.toFixed(2)}`;
+  const d = $('bleDial');
+  if (d) d.setAttribute('aria-valuenow', String(Math.round(pct)));
+  const sl = $('bleSpeed'); if (sl && +sl.value !== Math.round(pct)) sl.value = Math.round(pct);
   const hero = document.querySelector('#bleCtrl .hero');
   if (hero) hero.classList.toggle('blowing', pct > 0);   // 有风才飘（响应状态）
 }
+// 圆形表盘：拖动转圈调风量（0 在左下，顺时针到右下；键盘 ←→ 微调）
+(function initDial() {
+  const d = $('bleDial'); if (!d) return;
+  const apply = pct => { const v = Math.round(Math.max(0, Math.min(100, pct))); $('bleSpeedVal').textContent = v; paintFlow(v); blePushSpeed(v); };
+  const fromEvent = e => {
+    const r = d.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    let deg = Math.atan2(e.clientY - cy, e.clientX - cx) * 180 / Math.PI;   // 屏幕坐标：0=右，顺时针为正
+    const sweep = DIAL_SWEEP * 360;                                         // 270°
+    let t = (deg - 135 + 360) % 360;                                        // 0 = 左下起点，顺时针增大
+    if (t > sweep) t = (t > sweep + (360 - sweep) / 2) ? 0 : sweep;         // 底部 90° 空档：就近落到端点
+    apply(t / sweep * 100);
+  };
+  let dragging = false;
+  d.addEventListener('pointerdown', e => { dragging = true; d.setPointerCapture(e.pointerId); d.classList.add('drag'); fromEvent(e); e.preventDefault(); });
+  d.addEventListener('pointermove', e => { if (dragging) fromEvent(e); });
+  const stop = () => { dragging = false; d.classList.remove('drag'); };
+  d.addEventListener('pointerup', stop); d.addEventListener('pointercancel', stop);
+  d.addEventListener('keydown', e => {
+    const cur = +($('bleSpeedVal').textContent) || 0;
+    const step = e.shiftKey ? 10 : 1;
+    if (e.key === 'ArrowUp' || e.key === 'ArrowRight') { apply(cur + step); e.preventDefault(); }
+    else if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') { apply(cur - step); e.preventDefault(); }
+  });
+})();
 function toast(msg, dur = 2200) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), dur); }
 const LOG_CAP = 200; let logBuf = []; // 统一日志：始终入缓冲，开关打开时才渲染
 function logTo(id, line) {
