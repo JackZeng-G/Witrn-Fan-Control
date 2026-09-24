@@ -1,9 +1,12 @@
 <!DOCTYPE html>
+<!-- W96D 统一控制台 · 三版本（老版 W96D / NEW W96D / W96D Pro）
+     © 2026 jackzeng · MIT License（见 LICENSE） · 逆向研究产物，与 WITRN 官方无关
+     详见 W96D协议与技术文档.md -->
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>W96D 统一控制台 · v20260925h</title>
+<title>W96D 统一控制台 · v20260925j</title>
 <style>
 :root{--bg:#f0f2f5;--card:#fff;--text:#1a1a2e;--muted:#666;--on:#00b894;--off:#ff6b6b;--pri:#0984e3;--warn:#fdcb6e;--border:#e3e6ea}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -375,8 +378,8 @@ textarea{width:100%;min-height:70px;border:1px solid var(--border);border-radius
       <b>通信日志</b>：页面底部统一日志窗口，所有连接方式的操作/遥测原始数据都记录在此。「显示日志」控制窗口显隐，「遥测日志」控制高频遥测是否记录。
       <b>安全</b>：电池切勿装反；输入电压勿超规格。<br>
       <b>固件升级</b>：设备信息页 → ⬆ 固件升级，选择 <code>.up</code> 固件后点「开始升级」。升级期间请保持供电、不要断电或关页面；若中断，重新连接后再升一次即可。协议与流程见项目文档。<br>
-      <span style="opacity:.75">本工具为逆向研究产物，与官方无关。</span><br>
-      <span style="opacity:.75">版本标记：<b>v20260925h</b>（若与你手上的文件名/说明不一致，请 Ctrl+Shift+R 强刷）</span>
+      <span style="opacity:.75">© 2026 jackzeng · MIT License · 本工具为逆向研究产物，与 WITRN 官方无关。</span><br>
+      <span style="opacity:.75">版本标记：<b>v20260925j</b>（若与你手上的文件名/说明不一致，请 Ctrl+Shift+R 强刷）</span>
     </div>
   </div>
   <div class="card">
@@ -396,6 +399,10 @@ textarea{width:100%;min-height:70px;border:1px solid var(--border);border-radius
     <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="logToggle" checked> 显示日志</label>
     <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="telLogToggle"> 遥测日志</label></div>
   <div id="usbLog" style="display:none"></div>
+</div>
+
+<div class="note" style="text-align:center;color:var(--muted);font-size:.85rem;margin:6px 0 14px">
+  © 2026 jackzeng · W96D 统一控制台 v20260925j · MIT License · 逆向研究产物，与 WITRN 官方无关
 </div>
 
 <div id="toast"></div>

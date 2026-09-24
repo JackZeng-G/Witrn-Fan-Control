@@ -59,11 +59,15 @@ W96D统一控制台.html  →  用 Chrome / Edge 打开即可，无需安装、�
 | `W96D统一控制台.html` | 工具本体（单文件） |
 | `W96D协议与技术文档.md` | 三版本协议、GATT 表、DFU/OTA 流程、工具实现、失败判读，以及抓包关键数据（附录 A） |
 | `rom/` | 官方固件：`W96D_V13.up`（NEW W96D V1.3）、`W96P_V1.8.up`、老版 `.df` |
+| `LICENSE` | MIT 许可证（© 2026 jackzeng） |
 | `tools/parse_hci_log.js` | 蓝牙抓包复盘工具（btsnoop / pcap / vivo `.cfa`） |
 | `tools/tests/` | 回归测试：`node tools/tests/run_all.js`（约 13s） |
 
 ## 声明
 
-本项目是逆向研究产物，**与 WITRN 官方无关**；刷机与快充实验有风险，请自行评估。`rom/` 内固件版权归 WITRN。
+© 2026 **jackzeng**，[MIT 许可证](LICENSE)。本项目是逆向研究产物，**与 WITRN 官方无关**；刷机与快充实验有风险，请自行评估。
+
+- 许可证覆盖本仓库中由作者编写的代码与文档；
+- `rom/` 内厂商固件版权归 WITRN，仅作研究与刷机用途随仓库附带，不在 MIT 授权范围内。
 
 仓库中的设备蓝牙地址与序列号已做占位脱敏（含 git 历史），规则见 [技术文档「隐私处理」](W96D协议与技术文档.md)。
