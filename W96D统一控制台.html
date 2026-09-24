@@ -6,172 +6,192 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>W96D 统一控制台 · v20260925l</title>
+<title>W96D 统一控制台 · v20260925n</title>
 <style>
-/* ============ W96D 控制台 · 视觉系统 ============
-   方向「风洞仪表台」：冷纸底 + 印刷式细线 + 一把校准过的气流刻度。
-   唯一的大胆元素是气流刻度（读数 + 刻度尺）；其余一律安静：无卡片阴影、不统一圆角。
-   等宽字体只用于"设备报出来的数"（遥测/十六进制/SN/版本），界面文案用无衬线。 */
+/* ============ W96D 控制台 · 视觉系统 v4 ============
+   对象是**随身风扇**：电池供电、夏天随身、单手在手机上操作。
+   所以：清凉的浅蓝底 + 一个"风"主色；圆润好按（大圆角、药丸形档位、48px 触控）；
+   模块各自成卡（白面 + 表头分隔线 + 柔和阴影），页面不靠细线分区。
+   字体分工：界面文案无衬线；数字读数（电量/电压/版本/刻度）等宽。 */
 :root{
-  --paper:#eef1ee;          /* 冷纸底（偏青灰，非米色） */
-  --panel:#fff;
-  --ink:#16212b;            /* 蓝黑，代替纯黑 */
-  --ink-2:#5c6c76;
-  --ink-3:#8b9aa2;
-  --rule:#d3dad6;
-  --rule-2:#e6ebe8;
-  --flow:#0e7f7a;           /* 气流/在线：青绿 */
-  --flow-lo:#d7e9e6;
-  --flow-hi:#0a5f5b;
-  --alert:#c0442c;          /* 只用于危险动作（擦除/断开） */
-  --warm:#c07a1e;           /* 充电/ Turbo */
-  --tap:44px;               /* 触控目标下限 */
+  --bg:#eef4f9;             /* 夏日浅蓝底 */
+  --surface:#ffffff;
+  --surface-2:#f4f9fd;
+  --ink:#10222e;            /* 深蓝墨 */
+  --ink-2:#5b7285;
+  --ink-3:#90a6b4;
+  --rule:#dbe7ef;
+  --rule-2:#eef4f8;
+  --flow:#12a0c8;           /* 风：清凉青蓝 */
+  --flow-hi:#0a7fa3;
+  --flow-soft:#e4f5fb;
+  --flow-lo:#cdeaf5;
+  --charge:#e8a33d;         /* 充电/ Turbo：暖色，只有这两处用 */
+  --alert:#e2553f;          /* 停止/擦除 */
+  --radius:16px;            /* 消费电子的圆润 */
+  --radius-sm:10px;
+  --shadow:0 2px 10px rgba(16,34,46,.06),0 1px 2px rgba(16,34,46,.04);
+  --tap:48px;
   --sans:"Archivo","Helvetica Neue",Helvetica,Arial,system-ui,"PingFang SC","Microsoft YaHei",sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{-webkit-text-size-adjust:100%}
-body{
-  font-family:var(--sans);background:var(--paper);color:var(--ink);
-  font-size:15px;line-height:1.5;letter-spacing:.005em;
-  padding:0 14px 28px;max-width:780px;margin:0 auto;
-  background-image:linear-gradient(var(--rule-2) 1px,transparent 1px);
-  background-size:100% 34px;background-position:0 96px; /* 纸面淡横线：与刻度同源的印刷感 */
-}
-h1{font-size:1.15rem;font-weight:600;letter-spacing:-.01em;line-height:1.2}
-h3{font-size:.82rem;font-weight:600;letter-spacing:.06em;color:var(--ink-2);margin-bottom:10px}
+body{font-family:var(--sans);background:
+  radial-gradient(120% 60% at 50% -10%, #e2f2fb 0%, rgba(226,242,251,0) 60%), var(--bg);
+  color:var(--ink);font-size:15.5px;line-height:1.5;padding:0 16px 28px;max-width:880px;margin:0 auto}
+h1{font-size:1.25rem;font-weight:600;letter-spacing:-.01em}
 
-/* 页头：标题 + 连接状态 + 操作，下面一根粗校准线 */
-.masthead{padding:18px 0 12px;border-bottom:2px solid var(--ink);margin-bottom:0}
+/* ---------- 页头 ---------- */
+.masthead{padding:20px 0 14px}
 .masthead .brand{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
-.masthead .model{font-family:var(--mono);font-size:.78rem;color:var(--ink-2)}
-.tabs{display:flex;gap:18px;overflow-x:auto;border-bottom:1px solid var(--rule);margin:0 0 16px;scrollbar-width:none}
-.tabs::-webkit-scrollbar{display:none}
-.tabs button{
-  background:none;border:none;padding:12px 0 10px;font:inherit;font-size:.92rem;color:var(--ink-2);
-  cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-1px;
-}
-.tabs button:hover{color:var(--ink)}
-.tabs button.active{color:var(--ink);font-weight:600;border-bottom-color:var(--flow)}
-.tabs button:focus-visible{outline:2px solid var(--flow);outline-offset:2px;border-radius:3px}
+.masthead .model{font-size:.78rem;color:var(--ink-3)}
+#connBar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+#connBar .state{font-size:.88rem;color:var(--ink-2);font-family:var(--mono)}
+#connDot{width:10px;height:10px;border-radius:50%;background:var(--ink-3);display:inline-block;box-shadow:0 0 0 4px rgba(144,166,180,.16)}
+#connDot.ble{background:var(--flow);box-shadow:0 0 0 4px rgba(18,160,200,.16)}
+#connDot.usb,#connDot.hid{background:#3d7fc4;box-shadow:0 0 0 4px rgba(61,127,196,.16)}
 
-/* 面板：用细线与留白分区，不用卡片阴影 */
-.card{background:transparent;border:none;border-top:1px solid var(--rule);border-radius:0;padding:16px 0 4px;margin-bottom:6px}
-.card:first-child{border-top:none}
+/* ---------- 标签栏（药丸式，好按） ---------- */
+.tabs{display:flex;gap:8px;overflow-x:auto;margin:0 0 16px;scrollbar-width:none;padding-bottom:2px}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{background:var(--surface);border:1px solid var(--rule);border-radius:999px;padding:9px 16px;
+  font:inherit;font-size:.92rem;color:var(--ink-2);cursor:pointer;white-space:nowrap;min-height:40px}
+.tabs button:hover{color:var(--ink);border-color:var(--ink-3)}
+.tabs button.active{background:var(--flow);border-color:var(--flow);color:#fff;font-weight:600}
+.tabs button:focus-visible{outline:2px solid var(--flow);outline-offset:2px}
+
+/* ---------- 模块卡 ---------- */
+.card{background:var(--surface);border:1px solid var(--rule);border-radius:var(--radius);
+  padding:16px 16px 18px;box-shadow:var(--shadow)}
+.card>h3{font-size:.98rem;font-weight:600;color:var(--ink);margin:0 0 14px;padding-bottom:10px;
+  border-bottom:1px solid var(--rule-2)}
 .tabpage{display:none}
 .tabpage.active{display:block}
-.tabpage>#bleCtrl>.card:first-child{border-top:none;padding-top:6px}
-.panel-inset{background:var(--panel);border:1px solid var(--rule);border-radius:3px;padding:14px}
+.modgrid{display:grid;gap:14px;grid-template-columns:1fr;align-items:start}
+@media (min-width:760px){ .modgrid{grid-template-columns:1fr 1fr} .modgrid>.span2{grid-column:1/-1} }
 
-/* 英雄区：风量读数 + 校准刻度 */
-.hero{display:flex;flex-direction:column;gap:12px}
-.readout{display:flex;align-items:flex-end;gap:10px}
-.readout .num{font-family:var(--mono);font-weight:600;font-size:3.15rem;line-height:.92;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+/* ---------- 英雄区：今天的风量 ---------- */
+.hero{position:relative;overflow:hidden;gap:12px;
+  background:linear-gradient(180deg,#f7fcff 0%,var(--surface) 55%)}
+.hero::after{content:"";position:absolute;right:-40px;top:-60px;width:220px;height:220px;border-radius:50%;
+  background:radial-gradient(circle,rgba(18,160,200,.10),rgba(18,160,200,0) 70%);pointer-events:none}
+.readout{display:flex;align-items:flex-end;gap:10px;position:relative;z-index:1}
+.readout .num{font-family:var(--mono);font-weight:600;font-size:3.3rem;line-height:.9;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
 .readout .num small{font-size:1.4rem;font-weight:500;margin-left:2px}
-.readout .cap{font-size:.8rem;color:var(--ink-2);padding-bottom:6px}
-.flowscale{position:relative;height:34px;margin-top:2px}
-.flowscale .fill{position:absolute;left:0;bottom:14px;height:8px;width:0;background:linear-gradient(90deg,var(--flow-lo),var(--flow));transition:width .38s cubic-bezier(.2,.7,.2,1)}
-.flowscale .knob{position:absolute;bottom:11px;width:2px;height:14px;background:var(--ink);transition:left .38s cubic-bezier(.2,.7,.2,1)}
-.flowscale .ticks{position:absolute;left:0;right:0;bottom:0;height:12px;display:flex;justify-content:space-between;border-top:1px solid var(--rule)}
-.flowscale .ticks span{font-family:var(--mono);font-size:.68rem;color:var(--ink-3);padding-top:2px}
-.flowscale .ticks span::before{content:"";position:absolute}
-.flowscale .grid{position:absolute;left:0;right:0;bottom:14px;height:8px;background:repeating-linear-gradient(90deg,var(--rule) 0 1px,transparent 1px 10%)}
+.readout .cap{font-size:.82rem;color:var(--ink-2);padding-bottom:6px}
+.flowscale{position:relative;height:30px;z-index:1}
+.flowscale .grid{position:absolute;left:0;right:0;bottom:12px;height:10px;border-radius:999px;background:var(--rule-2)}
+.flowscale .fill{position:absolute;left:0;bottom:12px;height:10px;border-radius:999px;width:0;
+  background:linear-gradient(90deg,var(--flow-lo),var(--flow));transition:width .4s cubic-bezier(.2,.7,.2,1)}
+.flowscale .ticks{position:absolute;left:0;right:0;bottom:0;height:12px;display:flex;justify-content:space-between}
+.flowscale .ticks span{font-family:var(--mono);font-size:.66rem;color:var(--ink-3)}
+/* 风：只有开机且有风量时才流动（响应状态，不是装饰） */
+.breeze{position:absolute;right:14px;top:18px;width:54px;height:34px;opacity:0;transition:opacity .3s;z-index:1}
+.hero.blowing .breeze{opacity:1}
+.breeze i{position:absolute;left:0;height:3px;border-radius:2px;background:var(--flow);opacity:.45}
+.breeze i:nth-child(1){top:4px;width:34px;animation:bz 1.6s ease-in-out infinite}
+.breeze i:nth-child(2){top:15px;width:52px;animation:bz 1.6s ease-in-out .25s infinite}
+.breeze i:nth-child(3){top:26px;width:26px;animation:bz 1.6s ease-in-out .5s infinite}
+@keyframes bz{0%,100%{transform:translateX(0);opacity:.25}50%{transform:translateX(6px);opacity:.6}}
 
-/* 连接条 */
-#connBar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0}
-#connDot{width:9px;height:9px;border-radius:50%;background:var(--ink-3);display:inline-block;box-shadow:0 0 0 3px rgba(140,154,162,.18)}
-#connDot.ble{background:var(--flow);box-shadow:0 0 0 3px rgba(14,127,122,.18)}
-#connDot.usb,#connDot.hid{background:#2f6fb0;box-shadow:0 0 0 3px rgba(47,111,176,.18)}
-#connBar .state{font-size:.86rem;color:var(--ink-2)}
-
-/* 按钮：方角、字重明确，主次靠实心/描边区分 */
-.btn{
-  border:1px solid var(--rule);background:var(--panel);color:var(--ink);border-radius:3px;
-  padding:10px 14px;min-height:var(--tap);font:inherit;font-size:.92rem;cursor:pointer;
-  transition:background .15s,border-color .15s,color .15s;
-}
-.btn:hover{border-color:var(--ink-3)}
-.btn:focus-visible{outline:2px solid var(--flow);outline-offset:1px}
-.btn:disabled{opacity:.45;cursor:not-allowed}
-.btn-pri{background:var(--flow);border-color:var(--flow);color:#fff}
-.btn-pri:hover{background:var(--flow-hi);border-color:var(--flow-hi)}
-.btn-on{background:var(--flow);border-color:var(--flow);color:#fff}
-.btn-off{background:var(--panel);border-color:var(--alert);color:var(--alert)}
-.btn-off:hover{background:#fbf0ed}
-.btn-warn{background:var(--warm);border-color:var(--warm);color:#fff}
-.btn-tiny{padding:7px 10px;min-height:34px;font-size:.85rem}
-.btn.gearBtn[aria-pressed="true"],.gearBtn.sel{background:var(--ink);border-color:var(--ink);color:#fff}
-
+/* ---------- 控件 ---------- */
 .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-.controlbar{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;margin-top:12px}
-.gearset{display:flex;flex:1 1 260px;gap:6px;min-width:240px;max-width:420px}
-.gearset .btn{flex:1;min-width:60px}
-@media (max-width:520px){.gearset{flex-basis:100%}}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-
-label{color:var(--ink-2);font-size:.88rem}
-input[type=number],input[type=text]{
-  border:1px solid var(--rule);border-radius:3px;padding:8px;width:104px;font:inherit;
-  font-family:var(--mono);font-size:.92rem;background:var(--panel);color:var(--ink)
-}
+.controlbar{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center}
+.gearset{display:flex;flex:1 1 260px;gap:8px;min-width:240px;max-width:480px}
+.gearset .btn{flex:1;min-width:58px;border-radius:999px}
+@media (max-width:520px){.gearset{flex-basis:100%;max-width:none}}
+.btn{border:1px solid var(--rule);background:var(--surface);color:var(--ink);border-radius:var(--radius-sm);
+  padding:11px 16px;min-height:var(--tap);font:inherit;font-size:.95rem;cursor:pointer;
+  transition:background .15s,border-color .15s,color .15s,transform .08s}
+.btn:hover{border-color:var(--ink-3);background:var(--surface-2)}
+.btn:active{transform:translateY(1px)}
+.btn:focus-visible{outline:2px solid var(--flow);outline-offset:2px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn-pri{background:var(--flow);border-color:var(--flow);color:#fff;border-radius:999px;font-weight:600}
+.btn-pri:hover{background:var(--flow-hi);border-color:var(--flow-hi);color:#fff}
+.btn-on{background:var(--flow);border-color:var(--flow);color:#fff;border-radius:999px;font-weight:600}
+.btn-on:hover{background:var(--flow-hi);border-color:var(--flow-hi)}
+/* 停止/关机：安静但可识别 */
+.btn-off{background:var(--surface);border-color:var(--rule);color:var(--alert)}
+.btn-off:hover{background:#fdf1ee;border-color:#f0c3b9}
+.btn-warn{background:var(--surface);border-color:var(--rule);color:var(--charge)}
+.btn-warn:hover{background:#fdf7ec;border-color:#ecd3a6}
+.btn-tiny{padding:8px 12px;min-height:38px;font-size:.88rem;border-radius:999px}
+label{color:var(--ink-2);font-size:.9rem}
+input[type=number],input[type=text]{border:1px solid var(--rule);border-radius:var(--radius-sm);padding:9px;
+  width:104px;font:inherit;font-family:var(--mono);font-size:.95rem;background:var(--surface);color:var(--ink)}
 input[type=number]:focus,input[type=text]:focus{outline:2px solid var(--flow);outline-offset:-1px;border-color:var(--flow)}
-input[type=range]{width:100%;accent-color:var(--flow);height:var(--tap)}
-input[type=checkbox]{accent-color:var(--flow);width:16px;height:16px}
-textarea{width:100%;min-height:64px;border:1px solid var(--rule);border-radius:3px;padding:8px;font-family:var(--mono);font-size:.72rem;line-height:1.55;background:var(--panel);color:var(--ink-2)}
+/* 滑轨：自己画，保证和配色一致（原生控件在大高度下会画成深色） */
+input[type=range]{-webkit-appearance:none;appearance:none;background:transparent;width:100%;height:44px;margin:2px 0}
+input[type=range]::-webkit-slider-runnable-track{height:10px;border-radius:999px;background:var(--rule-2)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;
+  background:var(--flow);border:3px solid #fff;box-shadow:0 1px 4px rgba(16,34,46,.22);margin-top:-7px}
+input[type=range]:disabled::-webkit-slider-thumb{background:var(--ink-3)}
+input[type=range]::-moz-range-track{height:10px;border-radius:999px;background:var(--rule-2)}
+input[type=range]::-moz-range-thumb{width:24px;height:24px;border:3px solid #fff;border-radius:50%;background:var(--flow)}
+input[type=range]:focus-visible{outline:2px solid var(--flow);outline-offset:4px;border-radius:999px}
+input[type=checkbox]{accent-color:var(--flow);width:18px;height:18px}
+textarea{width:100%;min-height:64px;border:1px solid var(--rule);border-radius:var(--radius-sm);padding:10px;
+  font-family:var(--mono);font-size:.72rem;line-height:1.55;background:var(--surface-2);color:var(--ink-2)}
 
-/* 读数：设备报出来的数一律等宽、右对齐 */
+/* ---------- 读数 ---------- */
 .val{font-family:var(--mono);font-weight:600;font-size:1.05rem;color:var(--ink)}
-.kv{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:7px 0;border-bottom:1px solid var(--rule-2)}
+.kv{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:8px 0;border-bottom:1px solid var(--rule-2)}
 .kv:last-child{border-bottom:none}
-.kv .k{color:var(--ink-2);font-size:.88rem}
+.kv .k{color:var(--ink-2);font-size:.9rem}
 .disp,.kv .disp{font-family:var(--mono);font-size:.95rem;font-variant-numeric:tabular-nums;text-align:right}
-.badge{display:inline-block;padding:3px 9px;border-radius:2px;font-size:.8rem;background:var(--rule-2);color:var(--ink-2);font-family:var(--mono)}
-.badge.on{background:var(--flow);color:#fff}
-.badge.off{background:#f0dcd7;color:var(--alert)}
-
-/* 开关行 */
-.switchrow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--rule-2);flex-wrap:wrap}
+.badge{display:inline-block;padding:4px 11px;border-radius:999px;font-size:.8rem;background:var(--surface-2);
+  color:var(--ink-2);font-family:var(--mono);border:1px solid var(--rule)}
+.badge.on{background:var(--flow-soft);color:var(--flow-hi);border-color:#c9e6f2}
+.badge.off{background:#fdf1ee;color:var(--alert);border-color:#f0cdc4}
+.switchrow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 0;
+  border-bottom:1px solid var(--rule-2);flex-wrap:wrap}
 .switchrow:last-child{border-bottom:none}
 
-/* 仪器面：曲线画布与日志用凹陷外框（唯一带边框+圆角的地方） */
-canvas{background:var(--panel);border:1px solid var(--rule);border-radius:3px;width:100%;touch-action:none;display:block}
-#usbLog{
-  background:#12211f;color:#cfe3df;font-family:var(--mono);font-size:.76rem;line-height:1.65;
-  padding:12px;border-radius:3px;max-height:200px;overflow:auto;white-space:pre-wrap;word-break:break-all;
-  border:1px solid #0c1a18;
-}
-.note{font-size:.82rem;color:var(--ink-2);margin-top:6px;line-height:1.55}
+/* ---------- 仪器面 ---------- */
+canvas{background:var(--surface);border:1px solid var(--rule);border-radius:var(--radius-sm);width:100%;touch-action:none;display:block}
 .readoutline{font-family:var(--mono);font-size:.78rem;color:var(--ink-2);margin-top:6px;font-variant-numeric:tabular-nums}
-.warnbox{background:#fdf4e6;border:1px solid #f0dcbb;border-left:3px solid var(--warm);border-radius:2px;padding:9px 12px;font-size:.85rem;margin-top:8px}
-.info{font-size:.9rem;color:var(--ink-2)}
-#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 18px;border-radius:3px;opacity:0;pointer-events:none;transition:opacity .25s;max-width:90vw;z-index:99;font-size:.9rem}
+#usbLog{background:#0d2733;color:#cfe9f2;font-family:var(--mono);font-size:.76rem;line-height:1.65;padding:12px;
+  border-radius:var(--radius-sm);max-height:200px;overflow:auto;white-space:pre-wrap;word-break:break-all;border:1px solid #0a1f29}
+.note{font-size:.84rem;color:var(--ink-2);margin-top:6px;line-height:1.55}
+.warnbox{background:#fdf7ec;border:1px solid #efdcbb;border-left:3px solid var(--charge);border-radius:6px;
+  padding:10px 12px;font-size:.86rem;margin-top:8px}
+.info{font-size:.92rem;color:var(--ink-2)}
+.footnote{text-align:center;color:var(--ink-3);font-size:.78rem;margin:22px 0 6px;font-family:var(--mono)}
+#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;
+  padding:12px 20px;border-radius:999px;opacity:0;pointer-events:none;transition:opacity .25s;max-width:90vw;z-index:99;font-size:.92rem}
 #toast.show{opacity:1}
 #otaBarFill{background:var(--flow)!important}
-.footnote{text-align:center;color:var(--ink-3);font-size:.78rem;margin:22px 0 6px;font-family:var(--mono)}
 
-@media (max-width:520px){
-  body{padding:0 12px 24px;font-size:14.5px}
-  .readout .num{font-size:2.8rem}
-  .grid4{grid-template-columns:repeat(2,1fr)}
-  .grid2{grid-template-columns:1fr}
-  .tabs{gap:14px}
-  input[type=number],input[type=text]{width:88px}
-}
-/* 夜班配色：同一套仪表语言，跟系统深色自动切换 */
+/* ---------- 夜间：同一套语言，睡眠场景（床头/夜间出门） ---------- */
 @media (prefers-color-scheme:dark){
   :root{
-    --paper:#0e1513; --panel:#141d1a; --ink:#e7eeea; --ink-2:#9fada7; --ink-3:#6e7c77;
-    --rule:#26322e; --rule-2:#1b2522; --flow:#41c1b0; --flow-lo:#153c39; --flow-hi:#63d7c6;
-    --alert:#e0715c; --warm:#dda44f;
+    --bg:#0a141b; --surface:#111e26; --surface-2:#16252e; --ink:#e8f1f6; --ink-2:#9db2c0; --ink-3:#6c8493;
+    --rule:#22333d; --rule-2:#1a2a33; --flow:#3fc0e0; --flow-hi:#63d3ef; --flow-soft:#0f2a35; --flow-lo:#1b4250;
+    --charge:#e8b264; --alert:#f07a63;
+    --shadow:0 2px 12px rgba(0,0,0,.35),0 1px 2px rgba(0,0,0,.3);
   }
-  .btn-pri,.btn-on,.badge.on{color:#06201d}
-  .btn-off:hover{background:#241a18}
-  .badge.off{background:#2a1a17;color:var(--alert)}
-  .warnbox{background:#241d12;border-color:#3a2f1c;border-left-color:var(--warm)}
-  #usbLog{background:#080d0c;border-color:#1d2a26;color:#c2e2db}
-  #toast{background:#e7eeea;color:#0e1513}
+  body{background:radial-gradient(120% 60% at 50% -10%, #10303d 0%, rgba(16,48,61,0) 60%), var(--bg)}
+  .hero{background:linear-gradient(180deg,#132630 0%,var(--surface) 60%)}
+  .btn-pri,.btn-on,.tabs button.active{color:#04222c}
+  .btn-off:hover{background:#2a1815;border-color:#5a3229}
+  .btn-warn:hover{background:#2a2216;border-color:#5a4826}
+  .badge.on{border-color:#1d4d5e}
+  .badge.off{background:#2a1815;border-color:#5a3229}
+  .warnbox{background:#2a2216;border-color:#4a3a1e;border-left-color:var(--charge)}
+  #usbLog{background:#081b23;border-color:#123039;color:#c6e8f2}
+  #toast{background:#e8f1f6;color:#0a141b}
+}
+@media (max-width:520px){
+  body{padding:0 12px 24px;font-size:15px}
+  .readout .num{font-size:2.9rem}
+  .grid4{grid-template-columns:repeat(2,1fr)}
+  .grid2{grid-template-columns:1fr}
+  .card{padding:14px 14px 16px}
 }
 @media (prefers-reduced-motion:reduce){
   *{transition:none!important;animation:none!important}
@@ -205,12 +225,13 @@ canvas{background:var(--panel);border:1px solid var(--rule);border-radius:3px;wi
 
 <!-- ============ 控制 ============ -->
 <div id="tabCtrl" class="tabpage active">
-  <div id="bleCtrl" style="display:none">
-    <div class="card hero">
+  <div id="bleCtrl" class="modgrid" style="display:none">
+    <div class="card hero span2">
       <div class="readout">
         <span class="num"><span id="bleSpeedVal">--</span><small>%</small></span>
         <span class="cap">风量（设备回读）</span>
       </div>
+      <div class="breeze" aria-hidden="true"><i></i><i></i><i></i></div>
       <div class="flowscale">
         <div class="grid"></div>
         <div class="fill" id="flowFill"></div>
@@ -232,21 +253,6 @@ canvas{background:var(--panel);border:1px solid var(--rule);border-radius:3px;wi
       <label style="display:block;margin-top:14px">无级转速（0-100%）</label>
       <input type="range" id="bleSpeed" min="0" max="100" value="50">
       <div class="note" style="margin-top:2px">滑轨直接下发风速百分比；档位按钮按下面的标定值下发。</div>
-    </div>
-    <div class="card">
-      <h3>档位标定与直设</h3>
-      <div class="row">
-        <label>1 档</label><input type="number" id="calib1" min="0" max="100" style="width:72px" title="第1档">
-        <label>2 档</label><input type="number" id="calib2" min="0" max="100" style="width:72px" title="第2档">
-        <label>3 档</label><input type="number" id="calib3" min="0" max="100" style="width:72px" title="第3档">
-        <label>4 档</label><input type="number" id="calib4" min="0" max="100" style="width:72px" title="第4档">
-        <button class="btn btn-tiny" id="bleCalibApply">保存标定</button>
-      </div>
-      <div class="row" style="margin-top:10px">
-        <label>直设转速</label>
-        <input type="number" id="bleSpeedInput" min="0" max="100" value="50" style="width:80px">
-        <button class="btn btn-tiny" id="bleSpeedApply">应用</button>
-      </div>
     </div>
     <div class="card">
       <h3>模式</h3>
@@ -292,6 +298,21 @@ canvas{background:var(--panel);border:1px solid var(--rule);border-radius:3px;wi
       </div>
     </div>
     <div class="card">
+      <h3>档位标定与直设</h3>
+      <div class="row">
+        <label>1 档</label><input type="number" id="calib1" min="0" max="100" style="width:72px" title="第1档">
+        <label>2 档</label><input type="number" id="calib2" min="0" max="100" style="width:72px" title="第2档">
+        <label>3 档</label><input type="number" id="calib3" min="0" max="100" style="width:72px" title="第3档">
+        <label>4 档</label><input type="number" id="calib4" min="0" max="100" style="width:72px" title="第4档">
+        <button class="btn btn-tiny" id="bleCalibApply">保存标定</button>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <label>直设转速</label>
+        <input type="number" id="bleSpeedInput" min="0" max="100" value="50" style="width:80px">
+        <button class="btn btn-tiny" id="bleSpeedApply">应用</button>
+      </div>
+    </div>
+    <div class="card span2">
       <h3>实时状态</h3>
       <div class="grid2">
         <div>
@@ -320,17 +341,15 @@ canvas{background:var(--panel);border:1px solid var(--rule);border-radius:3px;wi
     </div>
   </div>
 
-  <div id="usbCtrl" style="display:none">
-    <div class="card">
+  <div id="usbCtrl" class="modgrid" style="display:none">
+    <div class="card span2">
       <h3>档位控制（老版 W96D）</h3>
-      <div class="row" style="margin-bottom:8px">
-        <button class="btn uGearBtn" data-gear="0">⏹ 停止</button>
-      </div>
-      <div class="grid4" style="margin-bottom:10px">
-        <button class="btn uGearBtn" data-gear="1">1档</button>
-        <button class="btn uGearBtn" data-gear="2">2档</button>
-        <button class="btn uGearBtn" data-gear="3">3档</button>
-        <button class="btn uGearBtn" data-gear="4">4档</button>
+      <div class="gearset" style="max-width:none;margin-bottom:12px">
+        <button class="btn btn-off uGearBtn" data-gear="0">停止</button>
+        <button class="btn uGearBtn" data-gear="1">1 档</button>
+        <button class="btn uGearBtn" data-gear="2">2 档</button>
+        <button class="btn uGearBtn" data-gear="3">3 档</button>
+        <button class="btn uGearBtn" data-gear="4">4 档</button>
       </div>
       <label>当前档位风速 <span id="uGearPwmVal" class="val">未运行</span></label>
       <input type="range" id="uSpeed" min="1" max="100" value="50" disabled>
@@ -345,7 +364,7 @@ canvas{background:var(--panel);border:1px solid var(--rule);border-radius:3px;wi
       </div>
       <div class="note">切档即生效；每档风速可在上方调好保存，切到该档时会自动读回当前值。</div>
     </div>
-    <div class="card">
+    <div class="card span2">
       <h3>实时状态</h3>
       <div class="kv"><span class="k">序列号</span><span class="disp" id="uSn">--</span></div>
       <div class="grid2" style="margin-top:6px">
@@ -521,7 +540,7 @@ canvas{background:var(--panel);border:1px solid var(--rule);border-radius:3px;wi
       <b>安全</b>：电池切勿装反；输入电压勿超规格。<br>
       <b>固件升级</b>：设备信息页 → 固件升级，选择 <code>.up</code> 固件后点「开始升级」。升级期间请保持供电、不要断电或关页面；若中断，重新连接后再升一次即可。协议与流程见项目文档。<br>
       <span style="opacity:.75">© 2026 jackzeng · MIT License · 本工具为逆向研究产物，与 WITRN 官方无关。</span><br>
-      <span style="opacity:.75">版本标记：<b>v20260925l</b>（若与你手上的文件名/说明不一致，请 Ctrl+Shift+R 强刷）</span>
+      <span style="opacity:.75">版本标记：<b>v20260925n</b>（若与你手上的文件名/说明不一致，请 Ctrl+Shift+R 强刷）</span>
     </div>
   </div>
   <div class="card">
@@ -544,7 +563,7 @@ canvas{background:var(--panel);border:1px solid var(--rule);border-radius:3px;wi
 </div>
 
 <div class="footnote">
-  © 2026 jackzeng · W96D 统一控制台 v20260925l · MIT License · 逆向研究产物，与 WITRN 官方无关
+  © 2026 jackzeng · W96D 统一控制台 v20260925n · MIT License · 逆向研究产物，与 WITRN 官方无关
 </div>
 
 <div id="toast"></div>
@@ -676,6 +695,8 @@ function paintFlow(v) {
   const fill = $('flowFill'), knob = $('flowKnob');
   if (fill) fill.style.width = pct + '%';
   if (knob) knob.style.left = `calc(${pct}% - 1px)`;
+  const hero = document.querySelector('#bleCtrl .hero');
+  if (hero) hero.classList.toggle('blowing', pct > 0);   // 有风才飘（响应状态）
 }
 function toast(msg, dur = 2200) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), dur); }
 const LOG_CAP = 200; let logBuf = []; // 统一日志：始终入缓冲，开关打开时才渲染
