@@ -57,11 +57,10 @@ W96D统一控制台.html  →  用 Chrome / Edge 打开即可，无需安装、�
 | 文件 | 说明 |
 |---|---|
 | `W96D统一控制台.html` | 工具本体（单文件） |
-| `W96D协议与技术文档.md` | 三版本协议、GATT 表、DFU/OTA 流程、工具实现与失败判读 |
+| `W96D协议与技术文档.md` | 三版本协议、GATT 表、DFU/OTA 流程、工具实现、失败判读，以及抓包关键数据（附录 A） |
 | `rom/` | 官方固件：`W96D_V13.up`（NEW W96D V1.3）、`W96P_V1.8.up`、老版 `.df` |
 | `tools/parse_hci_log.js` | 蓝牙抓包复盘工具（btsnoop / pcap / vivo `.cfa`） |
 | `tools/tests/` | 回归测试：`node tools/tests/run_all.js`（约 13s） |
-| `BT_HCI_*.cfa` | 官方客户端成功刷机的抓包（协议结论的证据） |
 
 ## 声明
 
