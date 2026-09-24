@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>W96D 统一控制台 · v20260925f</title>
+<title>W96D 统一控制台 · v20260925g</title>
 <style>
 :root{--bg:#f0f2f5;--card:#fff;--text:#1a1a2e;--muted:#666;--on:#00b894;--off:#ff6b6b;--pri:#0984e3;--warn:#fdcb6e;--border:#e3e6ea}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -401,7 +401,7 @@ textarea{width:100%;min-height:70px;border:1px solid var(--border);border-radius
       <b>安全</b>：电池切勿装反；输入电压勿超规格。<br>
       <b>固件升级（OTA）</b>：<b>已内置</b>（设备信息页 → ⬆ 固件升级 OTA）。流程按官方小程序成功刷机的 HCI 抓包实现：<code>0x84</code> 应答后立刻在同一条连接上补发 <code>0x8F</code> → 等断链 → 重连并重新订阅 FEE2 → <code>0x85→02</code> → <code>0x8C</code> → <code>0x81+头96B</code> → <code>0x87</code>（此步擦除）→ 639 帧 → <code>0x88</code> → <code>0x0B</code> 复位。<b>先点「🧪 干跑」确认通路（不擦除）</b>；时序与证据见《逆向分析与统一工具方案.md》§2.4.0。<br>
       <span style="opacity:.75">本工具为逆向研究产物，与官方无关；协议细节与硬件 ID 见项目文档。</span><br>
-      <span style="opacity:.75">版本标记：<b>v20260925f</b>（若与你手上的文件名/说明不一致，请 Ctrl+Shift+R 强刷）</span>
+      <span style="opacity:.75">版本标记：<b>v20260925g</b>（若与你手上的文件名/说明不一致，请 Ctrl+Shift+R 强刷）</span>
     </div>
   </div>
   <div class="card">
@@ -1083,8 +1083,11 @@ async function dfuFrameLimit() {
   let verdict;
   if (!firstFail) verdict = `帧 7B→145B 全部有应答 ⇒ 该模式接收缓冲 ≥145B（"20B/帧长"假设排除；102B 解锁帧静默另有原因）`;
   else if (maxOk >= 134) verdict = `最大有应答帧长 ${maxOk}B ≥134B（足够装下 128B 数据块 + 102B 解锁帧）⇒ 帧长不是解锁失败的原因，须查内容/状态`;
-  else if (maxOk >= 102) verdict = `最大有应答帧长 ${maxOk}B ⇒ 102B 解锁帧可以整帧发出（我们的做法没错），但 128B 数据块帧(${134}B)超出上限、必须分片`;
-  else verdict = `最大有应答帧长 ${maxOk}B（< 102B）⇒ 连解锁帧都发不出，必须拆成多条 ≤${maxOk}B 短帧（且设备需能跨写重组）`;
+  else if (maxOk >= 102) verdict = `最大有应答帧长 ${maxOk}B ⇒ 102B 解锁帧可以整帧发出（我们的做法没错），但 128B 数据块帧(${134}B)超出上限`;
+  else verdict = `最大有应答帧长 ${maxOk}B（< 102B）⇒ 连解锁帧都发不出`;
+  // 2026-09-25 定论：官方小程序成功刷机时就是"单帧 102B / 单帧 134B"，帧长从来不是问题。
+  // 所以本探针只在"设备确实按长度拒绝"时有意义；测出上限偏低时，优先怀疑帧内容（CRC 表/载荷）而不是"必须分片"。
+  verdict += '【参考】抓包已证明官方小程序单帧发 102B/134B 均成功 ⇒ 本探针测出上限偏低时，先查帧内容（CRC 表版本、载荷），不要急于拆帧';
   logTo('usbLog', `[边界] 结论（模式=${cur}）：${verdict}`);
   if (out) out.textContent = `帧长边界（${cur}）：${verdict}`;
 }
@@ -1517,6 +1520,11 @@ $('dfuReadProbe').onclick = async () => {
    安全边界：**0x87 之前不发任何会写 flash 的命令**（解锁头 0x81 只校验，不擦除）。 */
 const OTA_CHUNK = 128;    // 抓包实测：pageSize 0x1000 ⇒ 每块 128B
 const OTA_PACE_MS = 18;   // 抓包实测帧间隔中位数（54.8 帧/秒）
+// 收尾（0x88 结束传输）参数：真机上设备写最后几页 flash + 校验可能远超抓包里的 133ms，
+// 所以默认「3 次 × 每次等 20s」。这两个值允许被 globalThis 覆盖，仅为让回归测试跑快些
+//（浏览器页面里没有任何地方会去设它们）。
+const OTA_END_RETRIES = (typeof globalThis !== 'undefined' && Number.isInteger(globalThis.OTA_END_RETRIES) && globalThis.OTA_END_RETRIES > 0) ? globalThis.OTA_END_RETRIES : 3;
+const OTA_END_TIMEOUT = (typeof globalThis !== 'undefined' && Number.isFinite(globalThis.OTA_END_TIMEOUT) && globalThis.OTA_END_TIMEOUT > 0) ? globalThis.OTA_END_TIMEOUT : 20000;
 function otaUI(pct, text) {
   if (pct !== undefined && pct !== null && !isNaN(pct)) { const f = $('otaBarFill'); if (f) f.style.width = Math.max(0, Math.min(100, pct)).toFixed(1) + '%'; }
   if (text !== undefined) { const o = $('otaOut'); if (o) o.textContent = text; }
@@ -1599,11 +1607,11 @@ async function otaRun(dryRun) {
   log(`全部 ${blocks} 块发送完毕（${fw.body.length}B，用时 ${secs}s，${(fw.body.length / 1024 / +secs).toFixed(1)} KB/s）`);
   /* ⑦ 结束传输：设备要把最后几页写进 flash 并校验，可能比抓包里的 133ms 慢很多，
      所以这里"长等待 + 最多 3 次重发 0x88"，并在彻底没应答时反过来问设备"你现在在哪一步"。 */
-  otaUI(96, '⑦ 结束传输（0x88，设备收尾中，最多等 60s）…');
+  otaUI(96, `⑦ 结束传输（0x88，设备收尾中，最多等 ${OTA_END_RETRIES * OTA_END_TIMEOUT / 1000}s）…`);
   let eu = null, rebooted = false;
-  for (let i = 0; i < 3 && !eu; i++) {
+  for (let i = 0; i < OTA_END_RETRIES && !eu; i++) {
     if (i) log(`0x88 第 ${i + 1} 次尝试（设备可能仍在写 flash / 校验）…`);
-    try { const r = await dfuRequest([0x08 | 0x80], [0x01, 0x02], 20000); if ((r[0] & 0x7f) === 2) eu = r; else log('0x88 应答异常：' + bytesHex(r)); }
+    try { const r = await dfuRequest([0x08 | 0x80], [0x01, 0x02], OTA_END_TIMEOUT); if ((r[0] & 0x7f) === 2) eu = r; else log('0x88 应答异常：' + bytesHex(r)); }
     catch (e) { if (S.type !== 'ble') { rebooted = true; break; } log('0x88 无应答（' + e.message + '）'); }
   }
   let verdict;
