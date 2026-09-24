@@ -6,49 +6,78 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>W96D 统一控制台 · v20260925p</title>
+<title>W96D 统一控制台 · v20260925s</title>
 <style>
-/* ============ W96D 控制台 · 视觉系统 v5 ============
+/* ============ W96D 控制台 · 视觉系统 v7 ============
    对象是**随身风扇**：电池供电、夏天随身、单手在手机上操作。
    · 形状：按钮=药丸，输入框/画布=圆角矩形，卡片=大圆角，表盘=正圆；同一层级只用一种形状。
-   · 色彩：薄荷绿=「风」，只给主操作与开关状态；暖橙只给 Turbo/快充；砖红只给停止/擦除。
+   · 色彩：亮天蓝=「风」，只给主操作与开关状态；暖橙只给 Turbo/快充；砖红只给停止/擦除。
+     整体走清爽亮色（浅天蓝底 + 纯白卡片），无深色模式，native 控件锁 light。
      文字对比度按 WCAG 4.5:1 校验过；--ink-3 只用于非文本（圆点/描边/禁用），不承载文字。
    · 间距：4/8 节奏（--sp-*），不再出现 10/14/18 这类随手值。
    · 字体：只用系统字体（离线可用、零第三方请求），读数用等宽 + tabular-nums。
-   · 深色跟随系统：token 名不变，另给一套值；主按钮在两种模式下都是「薄荷底 + 深墨字」。
+   · 背景：内联 SVG 画的一层层"风的等高线"，三组不同速度/方向缓慢漂移 + 微微起伏；
+     其中带 --gust 的几条跟着实际风量变浓（paintFlow 按风量写 --gust）。
    ⚠ 改界面不要动元素 id 与 JS 依赖的 class：tools/tests/idcheck.test.js / smoke.test.js 会校验。 */
 :root{
-  /* —— 面与墨 —— */
-  --bg:#eff6f2; --surface:#ffffff; --surface-2:#f4faf7;
-  --ink:#10222e;            /* 正文 14.8:1 */
-  --ink-2:#5b7285;          /* 次要文字 4.6:1（对最浅底色也达标） */
-  --ink-3:#74899a;          /* 仅非文本：圆点/描边/禁用（3.3:1） */
-  --rule:#d8e7e0; --rule-2:#ecf4f0;
-  /* —— 风（薄荷）—— */
-  --flow:#1fa87f;           /* 填充：白底 3.0:1（图形元素下限） */
-  --flow-hi:#2fb98d;        /* 填充悬停：更亮一档，仍配深墨字 */
-  --flow-ink:#116e53;       /* 浅底上的绿字 5.4:1 */
-  --on-flow:#04241c;        /* 绿底上的字 5.5:1 */
-  --flow-soft:#e3f5ee; --flow-lo:#c9ebdf;
+  /* —— 面与墨（亮天蓝底 + 纯白卡片）—— */
+  --bg:#e6f2fe; --surface:#ffffff; --surface-2:#f5faff;
+  --ink:#0e2334;            /* 正文 14.1:1 */
+  --ink-2:#4c6478;          /* 次要文字 5.4:1（就算压在风线上也还有 4.5:1） */
+  --ink-3:#6d8698;          /* 仅非文本：圆点/描边/禁用（3.4:1） */
+  --rule:#d3e5f8; --rule-2:#e9f3fd;
+  --wave:#2f9ee4;           /* 背景风的线条色（亮度靠 stroke-opacity 分档） */
+  /* —— 风（亮天蓝）—— */
+  --flow:#1e9be0;           /* 填充：白底 3.1:1（图形元素下限） */
+  --flow-hi:#3fb0ee;        /* 填充悬停：更亮一档，仍配深墨字 */
+  --flow-ink:#0f6ba5;       /* 浅底上的蓝字 5.7:1 */
+  --on-flow:#052434;        /* 蓝底上的字 5.2:1 */
+  --flow-soft:#e2f1fe; --flow-lo:#c6e2f9;
   /* —— 状态 —— */
   --charge:#e8a33d; --charge-ink:#96620f;   /* 暖橙：填充用前者，文字用后者 5.2:1 */
   --alert:#c23a24;                          /* 停止/擦除 5.4:1 */
-  --on:var(--flow-ink); --off:var(--alert); /* JS 给电池功率上色用（充=绿 / 放=红） */
+  --on:var(--flow-ink); --off:var(--alert); /* JS 给电池功率上色用（充=蓝 / 放=红） */
   /* —— 形 —— */
   --radius:16px; --radius-sm:12px; --radius-pill:999px;
   --tap:48px; --tap-min:44px;
   /* —— 间距：4/8 节奏 —— */
   --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px; --sp-8:32px;
   --shadow:0 2px 10px rgba(16,34,46,.06),0 1px 2px rgba(16,34,46,.04);
+  --gust:.5;                 /* 背景风的浓度：paintFlow 按风量改写（0.35 关机 ~ 1.0 满风） */
   --sans:system-ui,-apple-system,"Segoe UI",Roboto,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
   --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html{-webkit-text-size-adjust:100%}
+html{-webkit-text-size-adjust:100%;background:var(--bg);color-scheme:light}
 ::selection{background:var(--flow-lo);color:var(--ink)}
-body{font-family:var(--sans);background:
-  radial-gradient(120% 60% at 50% -10%, #dcf3e8 0%, rgba(220,243,232,0) 60%), var(--bg);
-  color:var(--ink);font-size:16px;line-height:1.55;padding:0 var(--sp-4) var(--sp-6);max-width:880px;margin:0 auto}
+body{font-family:var(--sans);color:var(--ink);font-size:16px;line-height:1.55;
+  padding:0 var(--sp-4) var(--sp-6);max-width:880px;margin:0 auto}
+
+/* ---------- 背景：波动的线条（一层层风的等高线） ----------
+   纯内联 SVG，不用图片、不用 canvas：9 条正弦曲线 ≈ 风的等高线。
+     · 每组整体平移 -50%（viewBox 宽 2400 → 正好一个波长），所以循环无缝：
+       路径从 x=-1200 画到 3600，平移一格后仍然铺满整屏；
+     · 三组速度与方向不同（s1 慢、s2 反向、s3 快）→ 视差，像一层层空气在走；
+     · 每组再套一个极慢的上下起伏（±7~11 单位），线条会"波动"而不是硬邦邦地平移；
+     · 全部只动 transform（合成器动画），不重绘，也不占大块纹理；
+     · .wg 那几条的浓度挂 --gust：风越大，背景里的风越明显。
+   线条最亮的一档压在最坏位置时 --ink-2 仍有 4.5:1（线条是 1~2px 细线）。 */
+.waves{position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none;display:block}
+.waves g{transform-box:view-box;transform-origin:0 0}
+.waves path{fill:none;stroke:var(--wave);stroke-linecap:round;vector-effect:non-scaling-stroke}
+.wa{stroke-width:1.2;stroke-opacity:.10}
+.wb{stroke-width:1.6;stroke-opacity:.17}
+.wg{stroke-width:2;stroke-opacity:calc(.26 * var(--gust))}
+.wv{animation:waveDrift var(--dur,64s) linear infinite}
+.s1{--dur:72s}
+.s2{--dur:96s;animation-direction:reverse}
+.s3{--dur:52s}
+.bob{animation:waveBob 15s ease-in-out infinite}
+.b1{animation-duration:17s;--amp:9px}
+.b2{animation-duration:23s;--amp:-11px}
+.b3{animation-duration:13s;--amp:7px}
+@keyframes waveDrift{from{transform:translate3d(0,0,0)}to{transform:translate3d(-50%,0,0)}}
+@keyframes waveBob{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(0,var(--amp,8px),0)}}
 h1{font-size:1.3rem;font-weight:650;letter-spacing:-.01em}
 
 /* ---------- 页头 ---------- */
@@ -57,9 +86,10 @@ h1{font-size:1.3rem;font-weight:650;letter-spacing:-.01em}
 .masthead .model{font-size:.8rem;color:var(--ink-2)}
 #connBar{display:flex;flex-wrap:wrap;gap:var(--sp-2);align-items:center}
 #connBar .state{font-size:.88rem;color:var(--ink-2);font-family:var(--mono)}
-#connDot{width:10px;height:10px;border-radius:50%;background:var(--ink-3);display:inline-block;box-shadow:0 0 0 4px rgba(116,137,154,.16)}
-#connDot.ble{background:var(--flow);box-shadow:0 0 0 4px rgba(31,168,127,.16)}
-#connDot.usb,#connDot.hid{background:#3d7fc4;box-shadow:0 0 0 4px rgba(61,127,196,.16)}
+#connDot{width:10px;height:10px;border-radius:50%;background:var(--ink-3);display:inline-block;box-shadow:0 0 0 4px rgba(107,130,150,.16)}
+#connDot.ble{background:var(--flow);box-shadow:0 0 0 4px rgba(30,155,224,.20)}
+/* 传输方式不能只靠颜色分：BLE 是天空蓝，USB/HID 走靛紫（文字里也写了是哪种） */
+#connDot.usb,#connDot.hid{background:#6f5bd0;box-shadow:0 0 0 4px rgba(111,91,208,.16)}
 
 /* ---------- 标签栏（药丸，44px 起，横向可滚） ---------- */
 .tabs{display:flex;gap:var(--sp-2);overflow-x:auto;margin:0 0 var(--sp-4);scrollbar-width:none;padding-bottom:2px}
@@ -83,9 +113,9 @@ h1{font-size:1.3rem;font-weight:650;letter-spacing:-.01em}
 
 /* ---------- 英雄区：今天的风量（圆形表盘，可转圈调风） ---------- */
 .hero{position:relative;overflow:hidden;gap:var(--sp-3);
-  background:linear-gradient(180deg,#f6fdf9 0%,var(--surface) 55%)}
+  background:linear-gradient(180deg,#f7fbff 0%,var(--surface) 55%)}
 .hero::after{content:"";position:absolute;right:-40px;top:-60px;width:220px;height:220px;border-radius:50%;
-  background:radial-gradient(circle,rgba(31,168,127,.10),rgba(31,168,127,0) 70%);pointer-events:none}
+  background:radial-gradient(circle,rgba(30,155,224,.13),rgba(30,155,224,0) 70%);pointer-events:none}
 .dialwrap{display:flex;flex-direction:column;align-items:center;gap:var(--sp-2);position:relative;z-index:1;padding:2px 0 var(--sp-1)}
 .dial{position:relative;width:204px;height:204px;border-radius:50%;touch-action:none;cursor:grab;
   background:radial-gradient(circle at 50% 34%,var(--surface),var(--surface-2));
@@ -192,8 +222,8 @@ input[type=file]::file-selector-button:hover{background:var(--surface-2);border-
 /* ---------- 仪器面 ---------- */
 canvas{background:var(--surface);border:1px solid var(--rule);border-radius:var(--radius-sm);width:100%;touch-action:none;display:block}
 .readoutline{font-family:var(--mono);font-size:.8rem;color:var(--ink-2);margin-top:var(--sp-2);font-variant-numeric:tabular-nums}
-#usbLog{background:#0d2720;color:#cfe9dd;font-family:var(--mono);font-size:.78rem;line-height:1.7;padding:var(--sp-3);
-  border-radius:var(--radius-sm);max-height:200px;overflow:auto;white-space:pre-wrap;word-break:break-all;border:1px solid #0a1f29}
+#usbLog{background:#0b1c28;color:#cfe2f2;font-family:var(--mono);font-size:.78rem;line-height:1.7;padding:var(--sp-3);
+  border-radius:var(--radius-sm);max-height:200px;overflow:auto;white-space:pre-wrap;word-break:break-all;border:1px solid #0a1826}
 #usbLog:focus-visible{outline:2px solid var(--flow);outline-offset:2px}
 .note{font-size:.85rem;color:var(--ink-2);margin-top:var(--sp-2);line-height:1.6}
 .warnbox{display:flex;gap:var(--sp-2);align-items:flex-start;background:#fdf7ec;border:1px solid #efdcbb;
@@ -212,28 +242,6 @@ canvas{background:var(--surface);border:1px solid var(--rule);border-radius:var(
 #otaBarFill{height:100%;width:0%;background:var(--flow);border-radius:var(--radius-pill);transition:width .12s}
 #otaPct{font-family:var(--mono);font-size:.82rem;color:var(--ink-2);font-variant-numeric:tabular-nums;min-width:3.2em;text-align:right}
 
-/* ---------- 夜间：同一套 token，另给一套值（床头/夜间出门） ---------- */
-@media (prefers-color-scheme:dark){
-  :root{
-    --bg:#0a1512; --surface:#111f1a; --surface-2:#162720;
-    --ink:#e8f2ec; --ink-2:#9db5aa; --ink-3:#7d968a;
-    --rule:#22332c; --rule-2:#1a2a24;
-    --flow:#4ecfa6; --flow-hi:#71dbb8; --flow-ink:#71dbb8; --on-flow:#04222c;
-    --flow-soft:#0f2a24; --flow-lo:#1b4238;
-    --charge:#e8b264; --charge-ink:#e8b264; --alert:#f07a63;
-    --on:var(--flow-ink); --off:var(--alert);
-    --shadow:0 2px 12px rgba(0,0,0,.35),0 1px 2px rgba(0,0,0,.3);
-  }
-  body{background:radial-gradient(120% 60% at 50% -10%, #0f2c22 0%, rgba(15,44,34,0) 60%), var(--bg)}
-  .hero{background:linear-gradient(180deg,#122a22 0%,var(--surface) 60%)}
-  .dial{box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 2px 16px rgba(0,0,0,.35)}
-  .btn-off:hover{background:#2a1815;border-color:#5a3229}
-  .btn-warn:hover{background:#2a2216;border-color:#5a4826}
-  .badge.off{background:#2a1815;border-color:#5a3229}
-  .warnbox{background:#2a2216;border-color:#4a3a1e;border-left-color:var(--charge)}
-  #usbLog{background:#081b16;border-color:#123029;color:#c6e8d8}
-  #toast{background:#e8f1f6;color:#0a141b}
-}
 @media (max-width:520px){
   body{padding:0 var(--sp-3) var(--sp-5);font-size:15px}
   .dial{width:192px;height:192px}
@@ -247,10 +255,30 @@ canvas{background:var(--surface);border:1px solid var(--rule);border-radius:var(
 }
 @media (prefers-reduced-motion:reduce){
   *{transition:none!important;animation:none!important}
+  .waves path{stroke-opacity:.12}   /* 不动的时候，线条压淡一点，别变成一片静止的斜纹 */
 }
 </style>
 </head>
 <body>
+<!-- 背景：波动的线条（一层层风的等高线）。整组平移恰好一个波长 → 无缝循环；
+     三组速度/方向/起伏都不同，叠起来就是流动的空气。改形状请重跑 tools 里的生成思路。 -->
+<svg class="waves" viewBox="0 0 2400 1200" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <g class="wv s1"><g class="bob b1">
+      <path class="wa" d="M-1200 90 C-1000 55 -800 55 -600 90 C-400 125 -200 125 0 90 C200 55 400 55 600 90 C800 125 1000 125 1200 90 C1400 55 1600 55 1800 90 C2000 125 2200 125 2400 90 C2600 55 2800 55 3000 90 C3200 125 3400 125 3600 90"/>
+      <path class="wg" d="M-1200 450 C-1000 397 -800 397 -600 450 C-400 503 -200 503 0 450 C200 397 400 397 600 450 C800 503 1000 503 1200 450 C1400 397 1600 397 1800 450 C2000 503 2200 503 2400 450 C2600 397 2800 397 3000 450 C3200 503 3400 503 3600 450"/>
+      <path class="wb" d="M-1200 825 C-1134 793 -1067 793 -1000 825 C-934 857 -867 857 -800 825 C-734 793 -667 793 -600 825 C-534 857 -467 857 -400 825 C-334 793 -267 793 -200 825 C-134 857 -67 857 0 825 C66 793 133 793 200 825 C266 857 333 857 400 825 C466 793 533 793 600 825 C666 857 733 857 800 825 C866 793 933 793 1000 825 C1066 857 1133 857 1200 825 C1266 793 1333 793 1400 825 C1466 857 1533 857 1600 825 C1666 793 1733 793 1800 825 C1866 857 1933 857 2000 825 C2066 793 2133 793 2200 825 C2266 857 2333 857 2400 825 C2466 793 2533 793 2600 825 C2666 857 2733 857 2800 825 C2866 793 2933 793 3000 825 C3066 857 3133 857 3200 825 C3266 793 3333 793 3400 825 C3466 857 3533 857 3600 825"/>
+  </g></g>
+  <g class="wv s2"><g class="bob b2">
+      <path class="wb" d="M-1200 205 C-1100 250 -1000 250 -900 205 C-800 160 -700 160 -600 205 C-500 250 -400 250 -300 205 C-200 160 -100 160 0 205 C100 250 200 250 300 205 C400 160 500 160 600 205 C700 250 800 250 900 205 C1000 160 1100 160 1200 205 C1300 250 1400 250 1500 205 C1600 160 1700 160 1800 205 C1900 250 2000 250 2100 205 C2200 160 2300 160 2400 205 C2500 250 2600 250 2700 205 C2800 160 2900 160 3000 205 C3100 250 3200 250 3300 205 C3400 160 3500 160 3600 205"/>
+      <path class="wb" d="M-1200 575 C-1100 612 -1000 612 -900 575 C-800 538 -700 538 -600 575 C-500 612 -400 612 -300 575 C-200 538 -100 538 0 575 C100 612 200 612 300 575 C400 538 500 538 600 575 C700 612 800 612 900 575 C1000 538 1100 538 1200 575 C1300 612 1400 612 1500 575 C1600 538 1700 538 1800 575 C1900 612 2000 612 2100 575 C2200 538 2300 538 2400 575 C2500 612 2600 612 2700 575 C2800 538 2900 538 3000 575 C3100 612 3200 612 3300 575 C3400 538 3500 538 3600 575"/>
+      <path class="wg" d="M-1200 950 C-1100 899 -1000 899 -900 950 C-800 1001 -700 1001 -600 950 C-500 899 -400 899 -300 950 C-200 1001 -100 1001 0 950 C100 899 200 899 300 950 C400 1001 500 1001 600 950 C700 899 800 899 900 950 C1000 1001 1100 1001 1200 950 C1300 899 1400 899 1500 950 C1600 1001 1700 1001 1800 950 C1900 899 2000 899 2100 950 C2200 1001 2300 1001 2400 950 C2500 899 2600 899 2700 950 C2800 1001 2900 1001 3000 950 C3100 899 3200 899 3300 950 C3400 1001 3500 1001 3600 950"/>
+  </g></g>
+  <g class="wv s3"><g class="bob b3">
+      <path class="wa" d="M-1200 330 C-1134 301 -1067 301 -1000 330 C-934 359 -867 359 -800 330 C-734 301 -667 301 -600 330 C-534 359 -467 359 -400 330 C-334 301 -267 301 -200 330 C-134 359 -67 359 0 330 C66 301 133 301 200 330 C266 359 333 359 400 330 C466 301 533 301 600 330 C666 359 733 359 800 330 C866 301 933 301 1000 330 C1066 359 1133 359 1200 330 C1266 301 1333 301 1400 330 C1466 359 1533 359 1600 330 C1666 301 1733 301 1800 330 C1866 359 1933 359 2000 330 C2066 301 2133 301 2200 330 C2266 359 2333 359 2400 330 C2466 301 2533 301 2600 330 C2666 359 2733 359 2800 330 C2866 301 2933 301 3000 330 C3066 359 3133 359 3200 330 C3266 301 3333 301 3400 330 C3466 359 3533 359 3600 330"/>
+      <path class="wa" d="M-1200 700 C-1000 748 -800 748 -600 700 C-400 652 -200 652 0 700 C200 748 400 748 600 700 C800 652 1000 652 1200 700 C1400 748 1600 748 1800 700 C2000 652 2200 652 2400 700 C2600 748 2800 748 3000 700 C3200 652 3400 652 3600 700"/>
+      <path class="wa" d="M-1200 1075 C-1000 1040 -800 1040 -600 1075 C-400 1110 -200 1110 0 1075 C200 1040 400 1040 600 1075 C800 1110 1000 1110 1200 1075 C1400 1040 1600 1040 1800 1075 C2000 1110 2200 1110 2400 1075 C2600 1040 2800 1040 3000 1075 C3200 1110 3400 1110 3600 1075"/>
+  </g></g>
+</svg>
 <header class="masthead">
   <div class="brand">
     <h1>W96D 控制台</h1>
@@ -589,7 +617,7 @@ canvas{background:var(--surface);border:1px solid var(--rule);border-radius:var(
       <b>安全</b>：电池切勿装反；输入电压勿超规格。<br>
       <b>固件升级</b>：设备信息页 → 固件升级，选择 <code>.up</code> 固件后点「开始升级」。升级期间请保持供电、不要断电或关页面；若中断，重新连接后再升一次即可。协议与流程见项目文档。<br>
       <span style="opacity:.75">© 2026 jackzeng · MIT License · 本工具为逆向研究产物，与 WITRN 官方无关。</span><br>
-      <span style="opacity:.75">版本标记：<b>v20260925p</b>（若与你手上的文件名/说明不一致，请 Ctrl+Shift+R 强刷）</span>
+      <span style="opacity:.75">版本标记：<b>v20260925s</b>（若与你手上的文件名/说明不一致，请 Ctrl+Shift+R 强刷）</span>
     </div>
   </div>
   <div class="card">
@@ -612,7 +640,7 @@ canvas{background:var(--surface);border:1px solid var(--rule);border-radius:var(
 </div>
 
 <div class="footnote">
-  © 2026 jackzeng · W96D 统一控制台 v20260925p · MIT License · 逆向研究产物，与 WITRN 官方无关
+  © 2026 jackzeng · W96D 统一控制台 v20260925s · MIT License · 逆向研究产物，与 WITRN 官方无关
 </div>
 
 <div id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
@@ -749,8 +777,11 @@ function paintFlow(v) {
   const d = $('bleDial');
   if (d) { const v = Math.round(pct); d.setAttribute('aria-valuenow', String(v)); d.setAttribute('aria-valuetext', v + '%'); }
   const sl = $('bleSpeed'); if (sl && +sl.value !== Math.round(pct)) sl.value = Math.round(pct);
+  // 背景里的"风"跟着实际风量走：关机时最淡，满风时最明显
+  const root = document.documentElement;
+  if (root && root.style) root.style.setProperty('--gust', (0.35 + 0.65 * pct / 100).toFixed(2));
   const hero = document.querySelector('#bleCtrl .hero');
-  if (hero) hero.classList.toggle('blowing', pct > 0);   // 有风才飘（响应状态）
+  if (hero && hero.classList && hero.classList.toggle) hero.classList.toggle('blowing', pct > 0);   // 有风才飘（响应状态）
 }
 // 圆形表盘：拖动转圈调风量（0 在左下，顺时针到右下；键盘 ←→ 微调）
 (function initDial() {
@@ -1185,7 +1216,7 @@ function makeCurveEditor(p) {
     // 非浏览器上下文（Node mock）没有 getComputedStyle：退回默认色，保证脚本仍可加载
     const cs = (typeof getComputedStyle === 'function') ? getComputedStyle(document.documentElement) : null;
     const tk = n => (cs ? (cs.getPropertyValue(n) || '').trim() : '');
-    const rule = tk('--rule') || '#d3dad6', flow = tk('--flow') || '#0e7f7a', dim = tk('--ink-3') || '#8b9aa2';
+    const rule = tk('--rule') || '#d3e5f8', flow = tk('--flow') || '#1e9be0', dim = tk('--ink-3') || '#6d8698';
     const x0 = PAD.l, y0 = PAD.t, gW = W - PAD.l - PAD.r, gH = H - PAD.t - PAD.b;
     ctx.clearRect(0, 0, W, H);
     ctx.font = '11px ui-monospace, Menlo, Consolas, monospace';
@@ -1246,8 +1277,6 @@ function makeCurveEditor(p) {
 const cv = makeCurveEditor({ canvas: $('cvCanvas'), textarea: $('cvData'), points: 128, smooth: 'cvSmooth', min: 'cvMin', max: 'cvMax', readout: 'cvReadout' });
 cv.data = DEFAULT_NATURE_WIND_CURVE.slice(); cv.sync();
 const uv = makeCurveEditor({ canvas: $('uvCanvas'), textarea: $('uvVals'), points: 100, smooth: 'uvSmooth', min: 'uvMin', max: 'uvMax', readout: 'uvReadout' });
-// 跟随系统深浅色切换时重绘画布（画布用 CSS 令牌取色）
-if (window && window.matchMedia) { const mq = window.matchMedia('(prefers-color-scheme: dark)'); const redraw = () => { cv.draw(); uv.draw(); }; mq.addEventListener ? mq.addEventListener('change', redraw) : mq.addListener(redraw); }
 uv.data = Array(100).fill(40); uv.sync();
 async function cvApply() {
   if (S.type !== 'ble') return toast('请先连接蓝牙设备');
